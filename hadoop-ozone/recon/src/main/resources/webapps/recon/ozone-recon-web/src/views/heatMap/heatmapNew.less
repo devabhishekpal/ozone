@@ -1,0 +1,108 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.heatmap-container {
+    height: 100%;
+
+    .heatmap-content {
+        display: flex;
+
+        h2,
+        h3 {
+            color: #6A6A6A;
+        }
+
+        .heatmap-sidepanel {
+            background: #FFFFFF;
+            border-right: 1px #C9C9C9 solid;
+            height: 75vh;
+            width: 300px;
+
+            .path-container {
+                margin-bottom: 10px;
+                display: flex;
+                align-items: flex-end;
+
+                #input-form {
+                    display: flex;
+                    flex-direction: column;
+
+                    .ant-input {
+                        width: 230px;
+                    }
+                }
+            }
+
+            #date-dropdown-button {
+                width: 94%;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+
+            }
+
+            #volume-container {
+                margin-top: 30px;
+
+                .ant-menu-item {
+                    width: 94%;
+                    height: 30px;
+                    line-height: 30px;
+                    border-radius: 2px;
+                    margin: 0px;
+                }
+            }
+        }
+
+        .heatmap-mainarea {
+            margin: 10px;
+            padding-left: 10px;
+            width: 100%;
+
+            .bucket-list {
+                overflow-y: auto;
+                height: 70vh;
+                margin-top: 20px;
+                width: calc(100% + 10px);
+                padding-right: 25px;
+                scrollbar-width: thin;
+
+                .bucket-container {
+                    width: 100%;
+                    margin-bottom: 10px;
+                    background-color: #FFFFFF;
+                    .bucket-content {
+                        display: flex;
+                        width: 100%;
+                        margin: 0px 5px;
+                        justify-content: space-between;
+
+                        .bucket-details {
+                            display: flex;
+                            align-items: center;
+
+                            strong {
+                                margin-right: 25px;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
