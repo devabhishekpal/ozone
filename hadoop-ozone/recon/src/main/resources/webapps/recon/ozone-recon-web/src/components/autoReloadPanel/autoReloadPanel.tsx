@@ -20,11 +20,11 @@ import React from 'react';
 
 import {Tooltip, Button, Switch} from 'antd';
 import './autoReloadPanel.less';
-import {withRouter} from 'react-router-dom';
-import {RouteComponentProps} from 'react-router';
+// import {withRouter} from 'react-router-dom';
+// import {RouteComponentProps} from 'react-router';
 import moment from 'moment';
 
-interface IAutoReloadPanelProps extends RouteComponentProps<object> {
+interface IAutoReloadPanelProps {
   onReload: () => void;
   lastRefreshed: number;
   lastUpdatedOMDBDelta: number;
@@ -35,14 +35,13 @@ interface IAutoReloadPanelProps extends RouteComponentProps<object> {
   omSyncLoad: () => void;
 }
 
-class AutoReloadPanel extends React.Component<IAutoReloadPanelProps> {
-  autoReloadToggleHandler = (checked: boolean, _event: Event) => {
-    const {togglePolling} = this.props;
+function AutoReloadPanel(props: IAutoReloadPanelProps) {
+  const autoReloadToggleHandler = (checked: boolean, _event: React.MouseEvent<HTMLButtonElement>) => {
+    const {togglePolling} = props;
     togglePolling(checked);
   };
 
-  render() {
-    const {onReload, lastRefreshed, lastUpdatedOMDBDelta, lastUpdatedOMDBFull, isLoading, omSyncLoad, omStatus} = this.props;
+  const {onReload, lastRefreshed, lastUpdatedOMDBDelta, lastUpdatedOMDBFull, isLoading, omSyncLoad, omStatus} = props;
     const autoReloadEnabled = sessionStorage.getItem('autoReloadEnabled') === 'false' ? false : true;
     
      const lastRefreshedText = lastRefreshed === 0 || lastRefreshed === undefined ? 'NA' :
@@ -85,13 +84,12 @@ class AutoReloadPanel extends React.Component<IAutoReloadPanelProps> {
     return (
       <div className='auto-reload-panel'>
         Auto Refresh
-        &nbsp;<Switch defaultChecked={autoReloadEnabled} size='small' className='toggle-switch' onChange={this.autoReloadToggleHandler}/>
+        &nbsp;<Switch defaultChecked={autoReloadEnabled} size='small' className='toggle-switch' onChange={autoReloadToggleHandler}/>
         &nbsp; | Refreshed at {lastRefreshedText}
         &nbsp;<Button shape='circle' icon='reload' size='small' loading={isLoading} onClick={onReload}/>
         {lastUpdatedDeltaFullText}
       </div>
     );
-  }
 }
 
-export default withRouter(AutoReloadPanel);
+export default AutoReloadPanel;

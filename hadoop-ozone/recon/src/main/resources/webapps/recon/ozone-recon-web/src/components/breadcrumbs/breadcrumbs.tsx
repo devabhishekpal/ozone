@@ -17,16 +17,16 @@
  */
 
 import React from 'react';
-import {Breadcrumb, Icon} from 'antd';
-import {withRouter, Link} from 'react-router-dom';
-import {RouteComponentProps} from 'react-router';
+import { Breadcrumb } from 'antd';
+import { HomeFilled } from '@ant-design/icons'
+import { Link } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import {breadcrumbNameMap} from 'constants/breadcrumbs.constants';
 
-class Breadcrumbs extends React.Component<RouteComponentProps> {
-  render() {
-    const {location} = this.props;
-    const pathSnippets = location.pathname.split('/').filter(i => i);
-    const extraBreadcrumbItems = pathSnippets.map((_, index) => {
+function Breadcrumbs() {
+  const location = useLocation();
+  const pathSnippets = location.pathname.split('/').filter((i: string) => i);
+  const extraBreadcrumbItems = pathSnippets.map((_, index) => {
       const url = `/${pathSnippets.slice(0, index + 1).join('/')}`;
       return (
         <Breadcrumb.Item key={url}>
@@ -36,17 +36,18 @@ class Breadcrumbs extends React.Component<RouteComponentProps> {
         </Breadcrumb.Item>
       );
     });
+
     const breadcrumbItems = [(
       <Breadcrumb.Item key='home'>
-        <Link to='/'><Icon type='home'/></Link>
+        <Link to='/'><HomeFilled/></Link>
       </Breadcrumb.Item>
     )].concat(extraBreadcrumbItems);
+
     return (
       <Breadcrumb>
         {breadcrumbItems}
       </Breadcrumb>
     );
-  }
 }
 
-export default withRouter(Breadcrumbs);
+export default Breadcrumbs;

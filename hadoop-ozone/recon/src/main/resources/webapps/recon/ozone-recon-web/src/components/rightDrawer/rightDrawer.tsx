@@ -16,34 +16,31 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {Table, Drawer} from 'antd';
 
-interface IRightDrawerProps extends RouteComponentProps<object> {
+interface IRightDrawerProps {
   visible: boolean;
   keys: [];
   values: [];
   path: string;
 }
 
-export class DetailPanel extends React.Component<IRightDrawerProps> {
-  state = {visible: false};
+function DetailPanel(props: IRightDrawerProps) {
+  const [visibility, setVisibility] = useState<boolean>(false);
 
-  componentWillReceiveProps(props) {
-    const {visible} = props;
-    this.setState({visible});
+  useEffect(() => {
+    const { visible } = props;
+    setVisibility(visible);
+  }, [props])
+
+  const onClose = () => {
+    setVisibility(false);
   }
 
-  onClose = () => {
-    this.setState({
-      visible: false
-    });
-  };
-
-  render() {
-    const {Column} = Table;
-    const {keys, values, path} = this.props;
-    const {visible} = this.state;
+  const {Column} = Table;
+    const { keys, values, path } = props;
+    const visible = visibility;
     const content = [];
     for (const [i, v] of keys.entries()) {
       content.push({key: v, value: values[i]});
@@ -59,7 +56,7 @@ export class DetailPanel extends React.Component<IRightDrawerProps> {
           visible={visible}
           getContainer={false}
           style={{position: 'absolute'}}
-          onClose={this.onClose}
+          onClose={onClose}
         >
           <Table dataSource={content}>
             <Column title='Property' dataIndex='key'/>
@@ -68,5 +65,6 @@ export class DetailPanel extends React.Component<IRightDrawerProps> {
         </Drawer>
       </div>
     );
-  }
 }
+
+export default DetailPanel;

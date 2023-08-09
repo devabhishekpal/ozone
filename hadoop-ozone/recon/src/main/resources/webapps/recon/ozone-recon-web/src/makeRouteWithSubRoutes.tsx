@@ -17,14 +17,14 @@
  */
 
 import React from 'react';
-import {Route} from 'react-router-dom';
+import {Route, RouteObject} from 'react-router-dom';
 import {IRoute} from './types/routes.types';
 
-export const MakeRouteWithSubRoutes = (route: IRoute) => {
+export const MakeRouteWithSubRoutes = (route: RouteObject) => {
   return (
     <Route
       path={route.path}
-      render={props => (
+      element={props => (
         <route.component {...props} routes={route.routes}/>
       )}
     />

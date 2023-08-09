@@ -22,7 +22,7 @@ import {Layout} from 'antd';
 import './app.less';
 import NavBar from './components/navBar/navBar';
 import Breadcrumbs from './components/breadcrumbs/breadcrumbs';
-import {HashRouter as Router, Switch, Route, Redirect} from 'react-router-dom';
+import {HashRouter as Router, Routes, Route, Navigate, useRoutes} from 'react-router-dom';
 import {routes} from './routes';
 import {MakeRouteWithSubRoutes} from './makeRouteWithSubRoutes';
 import classNames from 'classnames';
@@ -48,7 +48,7 @@ class App extends React.Component<Record<string, object>, IAppState> {
   render() {
     const {collapsed} = this.state;
     const layoutClass = classNames('content-layout', {'sidebar-collapsed': collapsed});
-
+    const viewRoutes = useRoutes(routes);
     return (
       <Router>
         <Layout style={{minHeight: '100vh'}}>
@@ -60,16 +60,15 @@ class App extends React.Component<Record<string, object>, IAppState> {
               </div>
             </Header>
             <Content style={{margin: '0 16px 0', overflow: 'initial'}}>
-              <Switch>
-                <Route exact path='/'>
-                  <Redirect to='/Overview'/>
-                </Route>
-                {
+              <Routes>
+                <Route path='/' element={<Navigate replace to='/Overview'/>}/>
+                {/* {
                   routes.map(
                     (route, index) => <MakeRouteWithSubRoutes key={index} {...route}/>
                   )
-                }
-              </Switch>
+                } */}
+
+              </Routes>
             </Content>
             <Footer style={{textAlign: 'center'}}/>
           </Layout>

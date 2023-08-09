@@ -16,141 +16,152 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import logo from '../../logo.png';
-import {Layout, Menu, Icon} from 'antd';
+import { Layout, Menu } from 'antd';
+import { 
+  DashboardFilled,
+  ClusterOutlined,
+  DeploymentUnitOutlined,
+  ContainerFilled,
+  BarChartOutlined,
+  DatabaseFilled,
+  PieChartFilled
+} from '@ant-design/icons'
 import './navBar.less';
-import {withRouter, Link} from 'react-router-dom';
-import {RouteComponentProps} from 'react-router';
+import { Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import axios from 'axios';
-import {showDataFetchError} from 'utils/common';
+import { showDataFetchError } from 'utils/common';
 
-const {Sider} = Layout;
+const { Sider } = Layout;
 
-interface INavBarProps extends RouteComponentProps<object> {
+interface INavBarProps {
   collapsed: boolean;
   onCollapse: (arg: boolean) => void;
+}
+
+interface INavBarState {
   isHeatmapAvailable: boolean;
   isLoading: boolean;
 }
 
-class NavBar extends React.Component<INavBarProps> {
-  constructor(props = {}) {
-    super(props);
-    this.state = {
-      isHeatmapAvailable: false,
-      isLoading: false
-    };
-  }
+const NavBar = (props: INavBarProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  componentDidMount(): void {
-    this.setState({
+  const [navBarState, setNavBarState] = useState<INavBarState>({
+    isHeatmapAvailable: false,
+    isLoading: false
+  });
+
+  const fetchDisableFeatures = () => {
+    setNavBarState(prevState => ({
+      ...prevState,
       isLoading: true
-    });
-    this.fetchDisableFeatures();
-  }
-  
-  fetchDisableFeatures = () => {
-    this.setState({
-      isLoading: true
-    });
+    }));
 
     const disabledfeaturesEndpoint = `/api/v1/features/disabledFeatures`;
     axios.get(disabledfeaturesEndpoint).then(response => {
       const disabledFeaturesFlag = response.data && response.data.includes('HEATMAP');
       // If disabledFeaturesFlag is true then disable Heatmap Feature in Ozone Recon
-      this.setState({
+      setNavBarState({
         isLoading: false,
         isHeatmapAvailable: !disabledFeaturesFlag
       });
     }).catch(error => {
-      this.setState({
+      setNavBarState(prevState => ({
+        ...prevState,
         isLoading: false
-      });
+      }));
       showDataFetchError(error.toString());
     });
-  };
-
-  refresh = () => {
-    console.log("refresh");
-    this.props.history.push('/Heatmap');
-    window.location.reload();
-    }
-
-  render() {
-    const {location} = this.props;
-    return (
-      <Sider
-        collapsible
-        collapsed={this.props.collapsed}
-        collapsedWidth={50}
-        style={{
-          overflow: 'auto', height: '100vh', position: 'fixed', left: 0
-        }}
-        onCollapse={this.props.onCollapse}
-      >
-        <div className='logo'>
-          <img src={logo} alt='Ozone Recon Logo' width={32} height={32}/>
-          <span className='logo-text'>Ozone Recon</span>
-        </div>
-        <Menu
-          theme='dark' defaultSelectedKeys={['/Dashboard']}
-          mode='inline' selectedKeys={[location.pathname]}
-        >
-          <Menu.Item key='/Overview'>
-            <Icon type='dashboard'/>
-            <span>Overview</span>
-            <Link to='/Overview'/>
-          </Menu.Item>
-          <Menu.Item key='/Datanodes'>
-            <Icon type='cluster'/>
-            <span>Datanodes</span>
-            <Link to='/Datanodes'/>
-          </Menu.Item>
-          <Menu.Item key='/Pipelines'>
-            <Icon type='deployment-unit'/>
-            <span>Pipelines</span>
-            <Link to='/Pipelines'/>
-          </Menu.Item>
-          <Menu.Item key='/Containers'>
-            <Icon type='container'/>
-            <span>Containers</span>
-            <Link to='/Containers'/>
-          </Menu.Item>
-          <Menu.SubMenu
-            title={
-              <span><Icon type='bar-chart' />
-                <span>Insights</span>
-              </span>
-            }>
-              <Menu.Item key="/Insights">
-                <span><Icon type='bar-chart' /></span>
-                <span>Insights</span>
-                <Link to='/Insights' />
-              </Menu.Item>
-              <Menu.Item key="/Om">
-              <span> <Icon type="database"/></span>
-              <span>OM DB Insights</span>
-              <Link to='/Om' />
-              </Menu.Item>
-          </Menu.SubMenu>
-          <Menu.Item key='/DiskUsage'>
-            <Icon type='pie-chart'/>
-            <span>Disk Usage</span>
-            <Link to='/DiskUsage'/>
-          </Menu.Item>
-          {
-            this.state.isHeatmapAvailable ?
-              <Menu.Item key='/Heatmap'>
-                <Icon type='bar-chart' />
-                <span>Heatmap</span>
-                <Link to='/Heatmap' onClick={this.refresh}/>
-              </Menu.Item> : ""
-          }
-        </Menu>
-      </Sider>
-    );
   }
-}
 
-export default withRouter(NavBar);
+  const refresh = () => {
+    console.log("refresh");
+    navigate('/Heatmap');
+    window.location.reload();
+  }
+
+  useEffect(() => {
+    setNavBarState(prevState => ({
+      ...prevState,
+      isLoading: true
+    }));
+  }, []);
+
+  return (
+    <Sider
+      collapsible
+      collapsed={props.collapsed}
+      collapsedWidth={50}
+      style={{
+        overflow: 'auto', height: '100vh', position: 'fixed', left: 0
+      }}
+      onCollapse={props.onCollapse}
+    >
+      <div className='logo'>
+        <img src={logo} alt='Ozone Recon Logo' width={32} height={32} />
+        <span className='logo-text'>Ozone Recon</span>
+      </div>
+      <Menu
+        theme='dark' defaultSelectedKeys={['/Dashboard']}
+        mode='inline' selectedKeys={[location.pathname]}
+      >
+        <Menu.Item key='/Overview'>
+          <DashboardFilled />
+          <span>Overview</span>
+          <Link to='/Overview' />
+        </Menu.Item>
+        <Menu.Item key='/Datanodes'>
+          <ClusterOutlined />
+          <span>Datanodes</span>
+          <Link to='/Datanodes' />
+        </Menu.Item>
+        <Menu.Item key='/Pipelines'>
+          <DeploymentUnitOutlined />
+          <span>Pipelines</span>
+          <Link to='/Pipelines' />
+        </Menu.Item>
+        <Menu.Item key='/Containers'>
+          <ContainerFilled />
+          <span>Containers</span>
+          <Link to='/Containers' />
+        </Menu.Item>
+        <Menu.SubMenu
+          title={
+            <span><BarChartOutlined />
+              <span>Insights</span>
+            </span>
+          }>
+          <Menu.Item key="/Insights">
+            <span><BarChartOutlined /></span>
+            <span>Insights</span>
+            <Link to='/Insights' />
+          </Menu.Item>
+          <Menu.Item key="/Om">
+            <span> <DatabaseFilled /></span>
+            <span>OM DB Insights</span>
+            <Link to='/Om' />
+          </Menu.Item>
+        </Menu.SubMenu>
+        <Menu.Item key='/DiskUsage'>
+          <PieChartFilled />
+          <span>Disk Usage</span>
+          <Link to='/DiskUsage' />
+        </Menu.Item>
+        {
+          navBarState.isHeatmapAvailable ?
+            <Menu.Item key='/Heatmap'>
+              <BarChartOutlined />
+              <span>Heatmap</span>
+              <Link to='/Heatmap' onClick={refresh} />
+            </Menu.Item> : ""
+        }
+      </Menu>
+    </Sider>
+  );
+};
+
+export default NavBar;

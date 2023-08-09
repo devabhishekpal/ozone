@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import {Overview} from './views/overview/overview';
+import Overview from './views/overview/overview';
 import {Datanodes} from './views/datanodes/datanodes';
 import {Pipelines} from './views/pipelines/pipelines';
 import {NotFound} from './views/notFound/notFound';
@@ -27,50 +27,51 @@ import {Om} from './views/insights/om/om';
 
 import {DiskUsage} from './views/diskUsage/diskUsage';
 import {Heatmap} from './views/heatMap/heatmap';
+import { RouteObject } from 'react-router';
 
-export const routes: IRoute[] = [
+export const routes: RouteObject[] = [
   {
     path: '/Overview',
-    component: Overview
+    element: <Overview/>
   },
-  {
-    path: '/Datanodes',
-    component: Datanodes
-  },
-  {
-    path: '/Pipelines',
-    component: Pipelines
-  },
-  {
-    path: '/Insights',
-    component: Insights
-  },
-  {
-    path: '/Om',
-    component: Om
-  },
-  {
-    path: '/MissingContainers',
-    component: MissingContainers
-  },
-  {
-    path: '/DiskUsage',
-    component: DiskUsage
-  },
-  {
-    path: '/Buckets',
-    component: DiskUsage,
-  },
-  {
-    path: '/Containers',
-    component: MissingContainers,
-  },
-  {
-    path: '/Heatmap',
-    component: Heatmap
-  },
-  {
-    path: '/:NotFound',
-    component: NotFound
-  }
+  // {
+  //   path: '/Datanodes',
+  //   component: Datanodes
+  // },
+  // {
+  //   path: '/Pipelines',
+  //   component: Pipelines
+  // },
+  // {
+  //   path: '/Insights',
+  //   component: Insights
+  // },
+  // {
+  //   path: '/Om',
+  //   component: Om
+  // },
+  // {
+  //   path: '/MissingContainers',
+  //   component: MissingContainers
+  // },
+  // {
+  //   path: '/DiskUsage',
+  //   component: DiskUsage
+  // },
+  // {
+  //   path: '/Buckets',
+  //   component: DiskUsage,
+  // },
+  // {
+  //   path: '/Containers',
+  //   component: MissingContainers,
+  // },
+  // {
+  //   path: '/Heatmap',
+  //   component: Heatmap
+  // },
+  // {
+  //   path: '/:NotFound',
+  //   component: NotFound
+  // }
 ];

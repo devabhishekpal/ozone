@@ -17,17 +17,16 @@
  */
 
 import React, {ReactElement} from 'react';
-import {Icon, Card, Row, Col} from 'antd';
-import {withRouter, Link} from 'react-router-dom';
-import {RouteComponentProps} from 'react-router';
+import { Card, Row, Col} from 'antd';
+import { Link } from 'react-router-dom';
 import StorageBar from '../storageBar/storageBar';
 import {IStorageReport} from 'types/datanode.types';
 import './overviewCard.less';
 
 const {Meta} = Card;
 
-interface IOverviewCardProps extends RouteComponentProps<object> {
-  icon: string;
+interface IOverviewCardProps {
+  icon: React.ReactElement;
   data: string | ReactElement;
   title: string;
   hoverable?: boolean;
@@ -37,7 +36,7 @@ interface IOverviewCardProps extends RouteComponentProps<object> {
   error?: boolean;
 }
 
-const defaultProps = {
+const defaultProps: object = {
   hoverable: false,
   loading: false,
   linkToUrl: '',
@@ -46,11 +45,11 @@ const defaultProps = {
 
 interface IOverviewCardWrapperProps {
   linkToUrl: string;
+  children: React.ReactNode
 }
 
-class OverviewCardWrapper extends React.Component<IOverviewCardWrapperProps> {
-  render() {
-    const {linkToUrl, children} = this.props;
+function OverviewCardWrapper(props: IOverviewCardWrapperProps) {
+  const {linkToUrl, children} = props;
     if (linkToUrl) {
       return (
         <Link to={linkToUrl}>
@@ -60,14 +59,10 @@ class OverviewCardWrapper extends React.Component<IOverviewCardWrapperProps> {
     }
 
     return children;
-  }
 }
 
-class OverviewCard extends React.Component<IOverviewCardProps> {
-  static defaultProps = defaultProps;
-
-  render() {
-    let {icon, data, title, loading, hoverable, storageReport, linkToUrl, error} = this.props;
+function OverviewCard(props: IOverviewCardProps) {
+  let {icon, data, title, loading, hoverable, storageReport, linkToUrl, error} = props;
     let meta = <Meta title={data} description={title}/>;
     const errorClass = error ? 'card-error' : '';
     if (storageReport) {
@@ -93,13 +88,13 @@ class OverviewCard extends React.Component<IOverviewCardProps> {
               </Row>
             </Col>
             <Col span={6}>
-              <Icon type={icon} style={{fontSize: '50px', float: 'right'}}/>
+              {icon}
             </Col>
           </Row>
         </Card>
       </OverviewCardWrapper>
     );
-  }
+
 }
 
-export default withRouter(OverviewCard);
+export default OverviewCard;

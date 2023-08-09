@@ -28,7 +28,7 @@ import './storageBar.less';
 
 const size = filesize.partial({standard: 'iec', round: 1});
 
-interface IStorageBarProps extends RouteComponentProps<object> {
+interface IStorageBarProps {
   total: number;
   used: number;
   remaining: number;
@@ -41,6 +41,7 @@ const defaultProps = {
   remaining: 0,
   showMeta: true
 };
+
 
 class StorageBar extends React.Component<IStorageBarProps> {
   static defaultProps = defaultProps;
@@ -64,7 +65,7 @@ class StorageBar extends React.Component<IStorageBarProps> {
           <Progress
             strokeLinecap='square'
             percent={getCapacityPercent(totalUsed, total)}
-            successPercent={getCapacityPercent(used, total)}
+            success={getCapacityPercent(used, total)}
             className='capacity-bar' strokeWidth={3}/>
         </Tooltip>
       </div>

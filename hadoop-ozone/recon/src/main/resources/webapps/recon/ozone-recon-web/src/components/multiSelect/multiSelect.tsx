@@ -21,7 +21,7 @@ import {
   ActionMeta,
   default as ReactSelect,
   Props as ReactSelectProps,
-  ValueType,
+  OnChangeValue,
   components,
   ValueContainerProps, OptionProps
 } from 'react-select';
@@ -46,10 +46,8 @@ const defaultProps = {
   }
 };
 
-export class MultiSelect extends PureComponent<IMultiSelectProps> {
-  static defaultProps = defaultProps;
-  render() {
-    const {allowSelectAll, allOption, options, maxShowValues = 5, onChange} = this.props;
+function MultiSelect(props: IMultiSelectProps){
+  const {allowSelectAll, allOption = defaultProps.allOption as IOption, options, maxShowValues = 5, onChange} = props;
     if (allowSelectAll) {
       const Option = (props: OptionProps<IOption>) => {
         return (
@@ -85,18 +83,21 @@ export class MultiSelect extends PureComponent<IMultiSelectProps> {
       const animatedComponents = makeAnimated();
       return (
         <ReactSelect
-          {...this.props}
+          {...props}
           options={[allOption!, ...options]}
           components={{
             Option,
             ValueContainer,
             animatedComponents
           }}
-          onChange={(selected: ValueType<IOption>, event: ActionMeta<IOption>) => {
-            const selectedValues = selected as IOption[];
+          onChange={(selected: OnChangeValue<IOption, false>, event: ActionMeta<IOption>) => {
+            const selectedValues = selected as IOption;
+            const action: ActionMeta<IOption> = {
+              action: 'select-option'
+            }
             if (selectedValues && selectedValues.length > 0) {
               if (selectedValues[selectedValues.length - 1].value === allOption!.value) {
-                return onChange!([allOption!, ...options], {action: 'select-option'});
+                return onChange!([allOption!, ...options], action);
               }
 
               let result: IOption[] = [];
@@ -119,6 +120,5 @@ export class MultiSelect extends PureComponent<IMultiSelectProps> {
       );
     }
 
-    return <ReactSelect {...this.props}/>;
-  }
+    return <ReactSelect {...props}/>;
 }
