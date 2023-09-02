@@ -40,6 +40,7 @@ jobs:
         uses: pnpm/action-setup@v2
         with:
           run_install: |
+            cwd: ./hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web
             args: [--lockfile-only]
       - name: Commit generated lockfile to PR
         run: |
