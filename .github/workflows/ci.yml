@@ -36,11 +36,15 @@ jobs:
         run: |
           #Delete the lockfile created by dependabot
           rm -rf ./hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/pnpm-lock.yaml
+      - name: Install NodeJS v16.14.2
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.14.2
       - name: Install pnpm and update lockfile
         uses: pnpm/action-setup@v2
         with:
           run_install: |
-            cwd: ./hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web
+            cwd: ./hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/
             args: [--lockfile-only]
       - name: Commit generated lockfile to PR
         run: |
