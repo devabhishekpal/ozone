@@ -21,7 +21,7 @@ env:
   OZONE_WITH_COVERAGE: ${{ github.repository == 'apache/ozone' && github.event_name != 'pull_request' }}
 jobs:
   dependabot-check:
-    if: contains(github.event.pull_request.title, 'Dependabot Package Upgrade')
+    if: ${{ github.actor == 'dependabot[bot]' }}
     runs-on: ubuntu-20.04
     env:
       CI_COMMIT_MESSAGE: Re-created lockfile using pnpm
