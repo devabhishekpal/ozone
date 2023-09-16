@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nonnull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.SafeModeAction;
 import org.apache.hadoop.hdds.annotation.InterfaceAudience;
@@ -1005,6 +1006,7 @@ public final class OzoneManagerProtocolClientSideTranslatorPB
   }
 
   @Override
+  @Nonnull
   public S3SecretValue getS3Secret(String kerberosID) throws IOException {
     GetS3SecretRequest request = GetS3SecretRequest.newBuilder()
         .setKerberosID(kerberosID)
@@ -1899,6 +1901,12 @@ public final class OzoneManagerProtocolClientSideTranslatorPB
   public void clearThreadLocalS3Auth() {
     this.threadLocalS3Auth.remove();
   }
+
+  @Override
+  public ThreadLocal<S3Auth> getS3CredentialsProvider() {
+    return this.threadLocalS3Auth;
+  }
+
   @Override
   public S3Auth getThreadLocalS3Auth() {
     return this.threadLocalS3Auth.get();
@@ -2307,13 +2315,13 @@ public final class OzoneManagerProtocolClientSideTranslatorPB
   }
 
   @Override
-  public EchoRPCResponse echoRPCReq(byte[] payloadReq,
-                                    int payloadSizeResp)
-          throws IOException {
+  public EchoRPCResponse echoRPCReq(byte[] payloadReq, int payloadSizeResp,
+                                    boolean writeToRatis) throws IOException {
     EchoRPCRequest echoRPCRequest =
             EchoRPCRequest.newBuilder()
                     .setPayloadReq(ByteString.copyFrom(payloadReq))
                     .setPayloadSizeResp(payloadSizeResp)
+                    .setReadOnly(!writeToRatis)
                     .build();
 
     OMRequest omRequest = createOMRequest(Type.EchoRPC)

@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 import React from 'react';
-import axios from 'axios';
 import { Row, Icon, Button, Input, Dropdown, Menu, DatePicker, Form } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import moment from 'moment';
@@ -24,6 +23,7 @@ import { showDataFetchError } from 'utils/common';
 import './heatmap.less';
 import HeatMapConfiguration from './heatMapConfiguration';
 import * as CONSTANTS from './constants/heatmapConstants';
+import { AxiosGetHelper } from 'utils/axiosRequestHelper';
 
 type inputPathValidity = "" | "error" | "success" | "warning" | "validating" | undefined
 
@@ -85,6 +85,8 @@ const colourScheme = {
   ]
 };
 
+let cancelHeatmapSignal: AbortController;
+
 export class Heatmap extends React.Component<Record<string, object>, ITreeState> {
   constructor(props = {}) {
     super(props);
@@ -131,8 +133,8 @@ export class Heatmap extends React.Component<Record<string, object>, ITreeState>
     const value = e.target.value;
     let inputValid = "";
     let helpMessage = ""
-    // Only allow letters, numbers,underscores and forward slashes
-    const regex = /^[a-zA-Z0-9_/]*$/;
+    // Only allow letters, numbers,underscores and forward slashes and hyphen
+    const regex = /^[a-zA-Z0-9_/-]*$/;
     if (!regex.test(value)) {
       helpMessage = "Please enter valid path"
       inputValid = "error"
@@ -157,7 +159,9 @@ export class Heatmap extends React.Component<Record<string, object>, ITreeState>
 
     if (date && path && entityType) {
       const treeEndpoint = `/api/v1/heatmap/readaccess?startDate=${date}&path=${path}&entityType=${entityType}`;
-      axios.get(treeEndpoint).then(response => {
+      const { request, controller } = AxiosGetHelper(treeEndpoint, cancelHeatmapSignal)
+      cancelHeatmapSignal = controller;
+      request.then(response => {
         minSize = this.minmax(response.data)[0];
         maxSize = this.minmax(response.data)[1];
         let treeResponse: ITreeResponse = this.updateSize(response.data);
@@ -201,6 +205,10 @@ export class Heatmap extends React.Component<Record<string, object>, ITreeState>
     });
     // By default render treemap for default path entity type and date
     this.updateTreeMap(CONSTANTS.ROOT_PATH, this.state.entityType, this.state.date);
+  }
+
+  componentWillUnmount(): void {
+    cancelHeatmapSignal && cancelHeatmapSignal.abort()
   }
 
   onChange = (date: any[]) => {
