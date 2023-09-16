@@ -27,6 +27,7 @@ import {Om} from './views/insights/om/om';
 
 import {DiskUsage} from './views/diskUsage/diskUsage';
 import {Heatmap} from './views/heatMap/heatmap';
+import { HeatmapImproved } from 'views/heatMap/heatmapNew';
 
 export const routes: IRoute[] = [
   {
@@ -67,7 +68,7 @@ export const routes: IRoute[] = [
   },
   {
     path: '/Heatmap',
-    component: Heatmap
+    component: HeatmapImproved
   },
   {
     path: '/:NotFound',

@@ -1,5 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import React, { CSSProperties, useMemo } from 'react';
-import { HeatmapDetailProps, HeatmapCellProps, HeatMapValue } from './heatmapComponentInterfaces';
+import { HeatmapDetailProps, HeatmapCellProps, HeatMapValue } from '../../types/heatmap.types';
 import { HeatmapCellComponent } from './heatmapCellComponent';
 
 const formatHeatmapData = ( data: HeatmapDetailProps['heatmapValues'] = []) => {
@@ -43,13 +60,14 @@ export const HeatmapDetailComponent = (props: HeatmapDetailProps) => {
   const data = useMemo(() => formatHeatmapData(heatmapValues), [heatmapValues]);
   const numRows = Math.floor(heatmapValues.length / 10); // We want to have max 10 blocks per row
   const numCols = heatmapValues.length - numRows; // Store the final number of colums left over
-  const cellSize = 11;
-  const cellSpacing = 2;
+  const cellSize = 20;
+  const cellSpacing = 35;
 
   const heatmapStyle = {
-    color: '#24292e',
+    color: '#24292E',
     userSelect: 'none',
-    display: 'block',
+    display: 'flex',
+    width: '100%',
     fontSize: 10,
   } as CSSProperties;
 
@@ -70,11 +88,12 @@ export const HeatmapDetailComponent = (props: HeatmapDetailProps) => {
                   const heatmapCellProps: HeatmapCellProps = {
                     key: cidx,
                     fill: mapHeatmapColour(data[keys[keyIdx]].count || 0, thresholds, panelColours),
-                    width: cellSize + 10,
+                    width: cellSize + 20,
                     height: cellSize,
-                    x: idx * ( cellSize + cellSpacing ),
-                    y: ( cellSpacing + cellSize ) * cidx,
-                    value: dataProps
+                    x: ( cellSpacing + cellSize ) * cidx,
+                    y: idx * ( cellSize + cellSpacing ),
+                    value: dataProps,
+                    tooltipRef: svgRef
                   }
 
                   return (
@@ -102,11 +121,12 @@ export const HeatmapDetailComponent = (props: HeatmapDetailProps) => {
                   const heatmapCellProps: HeatmapCellProps = {
                     key: cidx,
                     fill: mapHeatmapColour(data[keys[keyIdx]].count || 0, thresholds, panelColours),
-                    width: cellSize + 10,
+                    width: cellSize + 30,
                     height: cellSize,
-                    x: numRows * ( cellSize + cellSpacing ),
-                    y: ( cellSpacing + cellSize ) * cidx,
-                    value: dataProps
+                    x: ( cellSpacing + cellSize ) * cidx,
+                    y: numRows * ( cellSize + cellSpacing ),
+                    value: dataProps,
+                    tooltipRef: svgRef
                   }
 
                   return (
