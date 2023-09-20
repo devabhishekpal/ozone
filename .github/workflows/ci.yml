@@ -26,6 +26,8 @@ jobs:
     env:
       CI_COMMIT_MESSAGE: Re-created lockfile using pnpm
       CI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NODE_VERSION: 16.14.2
+      PNPM_VERSION: 7.33.6
     timeout-minutes: 15
     steps:
       - name: Extract branch name
@@ -39,22 +41,12 @@ jobs:
       - name: Install NodeJS v16.14.2
         uses: actions/setup-node@v3
         with:
-          node-version: 16.14.2
-      - name: Install pnpm and update lockfile
-        uses: pnpm/action-setup@v2
-        with:
-          run_install: |
-            cwd: ./hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/
-            args: [--lockfile-only]
-      - name: Commit generated lockfile to PR
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Recreate lockfile for PR
+        shell: bash
         run: |
-          git add ./hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/pnpm-lock.yaml
-          git commit -m "${{ env.CI_COMMIT_MESSAGE }}"
-      - name: Push Changes to current branch
-        uses: ad-m/github-push-action@master
-        with:
-          branch: ${{ steps.get_branch_name.outputs.branch }}
-          github_token: ${{ env.CI_GITHUB_TOKEN }}
+          # Install PNPM and recreate lockfile
+          dev-support/ci/dependabot_pr_actions.sh ${{ env.PNPM_VERSION }}
   build-info:
     runs-on: ubuntu-20.04
     env:
