@@ -53,20 +53,19 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Install PNPM v7.33.6
+      - name: Install pnpm v7.33.6 and recreate lockfile
+        working-directory: ozone
         shell: bash
         run: |
           # Install PNPM and recreate lockfile
           echo "Fetching pnpm from $PNPM_URL with version $PNPM_VERSION"
           $cURL_LOC $cURL_ARGS $PNPM_URL | env PNPM_VERSION=$PNPM_VERSION SHELL="$(which sh)" ENV="$HOME/.shrc" sh -
           source /home/runner/.shrc
-      - name: Recreate lockfile for PR
-        working-directory: ozone
-        shell: bash
-        run: |
-          pnpm config set store-dir ~/.pnpm-store
+          PNPM_LOC=$(which pnpm)
+          echo "pnpm is present at: $PNPM_LOC"
+          $PNPM_LOC/pnpm config set store-dir ~/.pnpm-store
           cd hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/
-          pnpm install --lockfile-only
+          $PNPM_LOC/pnpm install --lockfile-only
       - name: Commit generated lockfile
         working-directory: ozone
         run: |
