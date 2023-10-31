@@ -26,6 +26,3 @@ if [[ -n "$PNPM_VERSION" ]]; then
   # Install pnpm dependencies and re-create lockfile
   pnpm config set store-dir ~/.pnpm-store
   pnpm install --lockfile-only
-  git add ./hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/pnpm-lock.yaml
-  git commit -m \"Updated lockfile using pnpm\"
-  git push
