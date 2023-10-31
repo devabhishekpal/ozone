@@ -53,8 +53,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Recreate lockfile for PR
-        working-directory: ozone
+      - name: Install PNPM v7.33.6
         shell: bash
         run: |
           # Install PNPM and recreate lockfile
@@ -62,12 +61,18 @@ jobs:
           echo "Fetching pnpm from $PNPM_URL with version $PNPM_VERSION"
           $cURL_LOC $cURL_ARGS $PNPM_URL | env PNPM_VERSION=$PNPM_VERSION sh -
           # Install pnpm dependencies and re-create lockfile
+      - name: Recreate lockfile for PR
+        working-directory: ozone
+        shell: bash
+        run: |
           pnpm config set store-dir ~/.pnpm-store
+          cd hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/
           pnpm install --lockfile-only
       - name: Commit generated lockfile
         working-directory: ozone
         run: |
           OZONE_SHA=$(git -C ./ rev-parse HEAD)
+          cd hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/
           git add ./pnpm-lock.yaml
           git status
           git config --global user.name 'Github Actions'
