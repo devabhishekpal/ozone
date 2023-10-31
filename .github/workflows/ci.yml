@@ -30,15 +30,15 @@ jobs:
       PNPM_VERSION: 7.33.6
     timeout-minutes: 15
     steps:
-      - name: Extract branch name
-        shell: bash
-        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
-        id: get_branch_name
+      # - name: Extract branch name
+      #   shell: bash
+      #   run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+      #   id: get_branch_name
       - name: Checkout dependabot branch
         uses: actions/checkout@v4
         with:
           repository: apache/ozone
-          ref: ${{ steps.get_branch_name.outputs.branch }}
+          ref: ${{ github.ref_name }}
           path: ozone
       - name: Delete the lockfile
         working-directory: ozone
