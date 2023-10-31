@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# Dummy comment
 #
 # This script instruments hadoop rpc layer to print out all the request/response messages to the standard output.
 #
