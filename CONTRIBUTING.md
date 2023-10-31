@@ -8,7 +8,7 @@ This document summarize the contribution process:
 ## What can I contribute?
 
 We welcome contributions of:
-
+# Sample Line
  * **Code**. File a bug and submit a patch, or pick up any one of the unassigned Jiras.
    * [Newbie Ozone jiras](https://s.apache.org/OzoneNewbieJiras)
    * [All open and unassigned Ozone jiras](https://s.apache.org/OzoneUnassignedJiras)
