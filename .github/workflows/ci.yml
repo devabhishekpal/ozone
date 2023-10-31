@@ -60,8 +60,7 @@ jobs:
           # Install PNPM and recreate lockfile
           cd hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/
           echo "Fetching pnpm from $PNPM_URL with version $PNPM_VERSION"
-          cURL_RESULT="$($cURL_LOC $cURL_ARGS $PNPM_URL | env PNPM_VERSION=$PNPM_VERSION sh -)"
-          echo $cURL_RESULT
+          $cURL_LOC $cURL_ARGS $PNPM_URL | env PNPM_VERSION=$PNPM_VERSION sh -
           # Install pnpm dependencies and re-create lockfile
           pnpm config set store-dir ~/.pnpm-store
           pnpm install --lockfile-only
