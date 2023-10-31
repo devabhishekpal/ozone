@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: apache/ozone
-          ref: ${{ steps.get_branch_name.outputs.branch_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
           path: ozone
       - name: Delete the lockfile
         working-directory: ozone
