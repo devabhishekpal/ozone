@@ -29,6 +29,9 @@ jobs:
       CI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       NODE_VERSION: 16.14.2
       PNPM_VERSION: 7.33.6
+      cURL_LOC: /usr/bin/curl
+      cURL_ARGS: -fsSL
+      PNPM_URL: https://get.pnpm.io/install.sh
     timeout-minutes: 15
     steps:
       - name: Extract branch name
@@ -56,7 +59,12 @@ jobs:
         run: |
           # Install PNPM and recreate lockfile
           cd hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/
-          dev-support/ci/dependabot_pr_actions.sh ${{ env.PNPM_VERSION }}
+          echo "Fetching pnpm from $PNPM_URL with version $PNPM_VERSION"
+          cURL_RESULT="$($cURL_LOC $cURL_ARGS $PNPM_URL | env PNPM_VERSION=$PNPM_VERSION sh -)"
+          echo $cURL_RESULT
+          # Install pnpm dependencies and re-create lockfile
+          pnpm config set store-dir ~/.pnpm-store
+          pnpm install --lockfile-only
       - name: Commit generated lockfile
         working-directory: ozone
         run: |
