@@ -57,7 +57,6 @@ jobs:
         shell: bash
         run: |
           # Install PNPM and recreate lockfile
-          cd hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/
           echo "Fetching pnpm from $PNPM_URL with version $PNPM_VERSION"
           $cURL_LOC $cURL_ARGS $PNPM_URL | env PNPM_VERSION=$PNPM_VERSION SHELL="$(which sh)" sh -
           # Install pnpm dependencies and re-create lockfile
