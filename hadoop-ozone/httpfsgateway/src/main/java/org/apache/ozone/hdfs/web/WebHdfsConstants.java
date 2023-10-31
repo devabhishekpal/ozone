@@ -30,6 +30,7 @@ public final class WebHdfsConstants {
   public static final String SWEBHDFS_SCHEME = "swebhdfs";
   public static final Text WEBHDFS_TOKEN_KIND
       = new Text("WEBHDFS delegation");
+
   public static final Text SWEBHDFS_TOKEN_KIND
       = new Text("SWEBHDFS delegation");
 
