@@ -50,13 +50,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Recreate lockfile for PR
-        working-directory: dependabot-files/
+        working-directory: ozone
         shell: bash
         run: |
           # Install PNPM and recreate lockfile
           cd hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/
           dev-support/ci/dependabot_pr_actions.sh ${{ env.PNPM_VERSION }}
       - name: Commit generated lockfile
+        working-directory: ozone
         run: |
           OZONE_SHA=$(git -C ./ rev-parse HEAD)
           git add ./pnpm-lock.yaml
