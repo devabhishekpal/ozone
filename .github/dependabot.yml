@@ -2,7 +2,7 @@ version: 2
 updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "npm"
-    directory: "/hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/"
+    directory: "hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/"
     schedule:
       interval: "weekly"
     commit-message:
