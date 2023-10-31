@@ -58,7 +58,7 @@ jobs:
         run: |
           # Install PNPM and recreate lockfile
           echo "Fetching pnpm from $PNPM_URL with version $PNPM_VERSION"
-          $cURL_LOC $cURL_ARGS $PNPM_URL | env PNPM_VERSION=$PNPM_VERSION SHELL="$(which sh)" sh -
+          $cURL_LOC $cURL_ARGS $PNPM_URL | env PNPM_VERSION=$PNPM_VERSION SHELL="$(which sh)" ENV="$HOME/.shrc" sh -
           # Install pnpm dependencies and re-create lockfile
       - name: Recreate lockfile for PR
         working-directory: ozone
