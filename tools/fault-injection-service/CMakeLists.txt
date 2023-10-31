@@ -104,6 +104,8 @@ target_link_libraries(failure_injector_svc_client
 
 # Build unit tests
 set(CPP_UNIT_FUSE cpp_unit)
+
+
 foreach(_target
   TestFilePathFailures
   TestFailureInjector)
