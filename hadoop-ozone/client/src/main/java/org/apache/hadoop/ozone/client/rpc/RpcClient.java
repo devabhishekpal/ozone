@@ -107,6 +107,7 @@ import org.apache.hadoop.ozone.client.io.OzoneOutputStream;
 import org.apache.hadoop.ozone.client.protocol.ClientProtocol;
 import org.apache.hadoop.ozone.om.OMConfigKeys;
 import org.apache.hadoop.ozone.om.exceptions.OMException;
+import org.apache.hadoop.ozone.om.helpers.BasicOmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.BucketEncryptionKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.DeleteTenantState;
@@ -130,6 +131,7 @@ import org.apache.hadoop.ozone.om.helpers.OmVolumeArgs;
 import org.apache.hadoop.ozone.om.helpers.OpenKeySession;
 import org.apache.hadoop.ozone.om.helpers.OzoneAclUtil;
 import org.apache.hadoop.ozone.om.helpers.OzoneFileStatus;
+import org.apache.hadoop.ozone.om.helpers.OzoneFileStatusLight;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.S3SecretValue;
 import org.apache.hadoop.ozone.om.helpers.S3VolumeContext;
@@ -1558,18 +1560,35 @@ public class RpcClient implements ClientProtocol {
                                  String keyPrefix, String prevKey,
                                  int maxListResult)
       throws IOException {
-    List<OmKeyInfo> keys = ozoneManagerClient.listKeys(
-        volumeName, bucketName, prevKey, keyPrefix, maxListResult);
-    return keys.stream().map(key -> new OzoneKey(
-        key.getVolumeName(),
-        key.getBucketName(),
-        key.getKeyName(),
-        key.getDataSize(),
-        key.getCreationTime(),
-        key.getModificationTime(),
-        key.getReplicationConfig(),
-        key.isFile()))
-        .collect(Collectors.toList());
+
+    if (omVersion.compareTo(OzoneManagerVersion.LIGHTWEIGHT_LIST_KEYS) >= 0) {
+      List<BasicOmKeyInfo> keys = ozoneManagerClient.listKeysLight(
+          volumeName, bucketName, prevKey, keyPrefix, maxListResult).getKeys();
+
+      return keys.stream().map(key -> new OzoneKey(
+              key.getVolumeName(),
+              key.getBucketName(),
+              key.getKeyName(),
+              key.getDataSize(),
+              key.getCreationTime(),
+              key.getModificationTime(),
+              key.getReplicationConfig(),
+              key.isFile()))
+          .collect(Collectors.toList());
+    } else {
+      List<OmKeyInfo> keys = ozoneManagerClient.listKeys(
+          volumeName, bucketName, prevKey, keyPrefix, maxListResult).getKeys();
+      return keys.stream().map(key -> new OzoneKey(
+              key.getVolumeName(),
+              key.getBucketName(),
+              key.getKeyName(),
+              key.getDataSize(),
+              key.getCreationTime(),
+              key.getModificationTime(),
+              key.getReplicationConfig(),
+              key.isFile()))
+          .collect(Collectors.toList());
+    }
   }
 
   @Override
@@ -2053,6 +2072,16 @@ public class RpcClient implements ClientProtocol {
     OmKeyArgs keyArgs = prepareOmKeyArgs(volumeName, bucketName, keyName);
     return ozoneManagerClient
         .listStatus(keyArgs, recursive, startKey, numEntries,
+            allowPartialPrefixes);
+  }
+
+  @Override
+  public List<OzoneFileStatusLight> listStatusLight(String volumeName,
+      String bucketName, String keyName, boolean recursive, String startKey,
+      long numEntries, boolean allowPartialPrefixes) throws IOException {
+    OmKeyArgs keyArgs = prepareOmKeyArgs(volumeName, bucketName, keyName);
+    return ozoneManagerClient
+        .listStatusLight(keyArgs, recursive, startKey, numEntries,
             allowPartialPrefixes);
   }
 
