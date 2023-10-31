@@ -6,7 +6,7 @@ Ozone is an Apache project. The bug tracking system for Ozone is under the [Apac
 This document summarize the contribution process:
 
 ## What can I contribute?
-
+# Sample
 We welcome contributions of:
 
  * **Code**. File a bug and submit a patch, or pick up any one of the unassigned Jiras.
