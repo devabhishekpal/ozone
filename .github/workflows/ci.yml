@@ -61,11 +61,11 @@ jobs:
           echo "Fetching pnpm from $PNPM_URL with version $PNPM_VERSION"
           $cURL_LOC $cURL_ARGS $PNPM_URL | env PNPM_VERSION=$PNPM_VERSION SHELL="$(which sh)" ENV="$HOME/.shrc" sh -
           source /home/runner/.shrc
-          PNPM_LOC=$(which pnpm)
-          echo "pnpm is present at: $PNPM_LOC"
-          $PNPM_LOC/pnpm config set store-dir ~/.pnpm-store
+          PNPM_EXEC=$(which pnpm)
+          echo "pnpm is present at: $PNPM_EXEC"
+          $PNPM_EXEC config set store-dir ~/.pnpm-store
           cd hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/
-          $PNPM_LOC/pnpm install --lockfile-only
+          $PNPM_EXEC install --lockfile-only
       - name: Commit generated lockfile
         working-directory: ozone
         run: |
