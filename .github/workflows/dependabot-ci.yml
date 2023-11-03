@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   dependabot-check:
-    if: ${{ github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' && startsWith(github.event.pull_request.title, '[Recon] Dependabot Package Upgrade') }}
+    if: ${{ github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Recon] Dependabot Package Upgrade') }}
     runs-on: ubuntu-20.04
     env:
       CI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
