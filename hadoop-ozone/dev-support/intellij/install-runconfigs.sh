@@ -18,4 +18,5 @@ SRC_DIR="$SCRIPT_DIR/runConfigurations"
 DEST_DIR="$SCRIPT_DIR/../../../.idea/runConfigurations/"
 mkdir -p "$DEST_DIR"
 #shellcheck disable=SC2010
+
 ls -1 "$SRC_DIR" | grep -v ozone-site.xml | xargs -n1 -I FILE cp "$SRC_DIR/FILE" "$DEST_DIR"
