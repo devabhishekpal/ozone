@@ -308,7 +308,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <lz4.version>1.9.3</lz4.version>
     <snappy.version>1.1.8</snappy.version>
     <zstd.version>1.4.9</zstd.version>
-    <jgrapht.version>1.0.1</jgrapht.version>
+    <jgrapht.version>1.5.2</jgrapht.version>
 
     <vault.driver.version>5.1.0</vault.driver.version>
     <java.uuid.generator.version>4.3.0</java.uuid.generator.version>
