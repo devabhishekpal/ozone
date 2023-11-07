@@ -22,7 +22,7 @@ METHOD appendLog
 AT ENTRY
 BIND elapsedTime = java.lang.Math.toIntExact(getElapsedTimeFromTimer("appendLog" + Thread.currentThread().getId()))
 IF TRUE
-DO 
+DO
    System.out.println("appendLog: " + elapsedTime);
    resetTimer("appendLog" + Thread.currentThread().getId());
 ENDRULE
