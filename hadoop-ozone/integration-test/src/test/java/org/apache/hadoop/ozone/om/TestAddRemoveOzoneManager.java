@@ -189,7 +189,7 @@ public class TestAddRemoveOzoneManager {
         .toLong(TimeUnit.MILLISECONDS) * 3);
 
     // Verify that one of the new OMs is the leader
-    GenericTestUtils.waitFor(() -> cluster.getOMLeader() != null, 500, 30000);
+    cluster.waitForLeaderOM(500, 30000);
     OzoneManager omLeader = cluster.getOMLeader();
 
     Assert.assertTrue("New Bootstrapped OM not elected Leader even though " +
@@ -416,6 +416,6 @@ public class TestAddRemoveOzoneManager {
     }, 100, 100000);
 
     // Wait for new leader election if required
-    GenericTestUtils.waitFor(() -> cluster.getOMLeader() != null, 500, 30000);
+    cluster.waitForLeaderOM(500, 30000);
   }
 }

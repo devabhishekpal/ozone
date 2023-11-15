@@ -170,18 +170,26 @@ public class MiniOzoneHAClusterImpl extends MiniOzoneClusterImpl {
         .findFirst().orElse(null);
   }
 
-  private OzoneManager getOMLeader(boolean waitForLeaderElection)
+  private OzoneManager waitForLeaderOM()
       throws TimeoutException, InterruptedException {
-    if (waitForLeaderElection) {
-      final OzoneManager[] om = new OzoneManager[1];
-      GenericTestUtils.waitFor(() -> {
-        om[0] = getOMLeader();
-        return om[0] != null;
-      }, 200, waitForClusterToBeReadyTimeout);
-      return om[0];
-    } else {
-      return getOMLeader();
-    }
+
+    final OzoneManager[] om = new OzoneManager[1];
+    GenericTestUtils.waitFor(() -> {
+      om[0] = getOMLeader();
+      return om[0] != null;
+    }, 200, waitForClusterToBeReadyTimeout);
+    return om[0];
+  }
+
+  private OzoneManager waitForLeaderOM(int checkInterval, int waitTimeout)
+          throws TimeoutException, InterruptedException {
+
+    final OzoneManager[] om = new OzoneManager[1];
+    GenericTestUtils.waitFor(() -> {
+      om[0] = getOMLeader();
+      return om[0] != null;
+    }, checkInterval, waitTimeout);
+    return om[0];
   }
 
   /**
