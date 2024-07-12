@@ -51,7 +51,7 @@ for HADOOP_VERSION in ${hadoop2.version} 3.1.2 ${hadoop.version}; do
     export HADOOP_IMAGE=flokkr/hadoop
   fi
 
-  docker-compose --ansi never --profile hadoop up -d nm rm
+  docker compose --ansi never --profile hadoop up -d nm rm
 
   execute_command_in_container rm hadoop version
 
