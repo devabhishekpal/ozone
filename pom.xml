@@ -115,13 +115,13 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <commons-compress.version>1.26.0</commons-compress.version>
     <commons-configuration2.version>2.10.1</commons-configuration2.version>
     <zstd-jni.version>1.5.6-3</zstd-jni.version>
-    <commons-daemon.version>1.3.4</commons-daemon.version>
+    <commons-daemon.version>1.4.0</commons-daemon.version>
     <commons-io.version>2.16.1</commons-io.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
     <commons-logging.version>1.2</commons-logging.version>
     <commons-logging-api.version>1.1</commons-logging-api.version>
     <commons-math3.version>3.6.1</commons-math3.version>
-    <commons-net.version>3.10.0</commons-net.version>
+    <commons-net.version>3.11.1</commons-net.version>
     <commons-text.version>1.12.0</commons-text.version>
     <commons-validator.version>1.6</commons-validator.version>
     <commons-fileupload.version>1.5</commons-fileupload.version>
@@ -133,7 +133,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <java.security.egd>file:///dev/urandom</java.security.egd>
 
     <annotation-api.version>1.3.2</annotation-api.version>
-    <assertj.version>3.26.0</assertj.version>
+    <assertj.version>3.26.3</assertj.version>
     <bonecp.version>0.8.0.RELEASE</bonecp.version>
     <bouncycastle.version>1.78.1</bouncycastle.version>
     <derby.version>10.14.2.0</derby.version>
@@ -174,7 +174,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 
     <!-- SLF4J/LOG4J version -->
     <slf4j.version>2.0.13</slf4j.version>
-    <log4j2.version>2.17.1</log4j2.version>
+    <log4j2.version>2.23.1</log4j2.version>
     <disruptor.version>3.4.4</disruptor.version>
     <reload4j.version>1.2.25</reload4j.version>
 
