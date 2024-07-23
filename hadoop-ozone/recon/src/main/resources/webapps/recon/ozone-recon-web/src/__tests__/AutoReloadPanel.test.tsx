@@ -29,13 +29,13 @@ import { BrowserRouter } from "react-router-dom";
 import "@testing-library/react/dont-cleanup-after-each";
 import { fireEvent, render, screen } from "@testing-library/react";
 
-import { autoReloadPanelLocators } from "./locators/locators";
-import AutoReloadPanel from "components/autoReloadPanel/autoReloadPanel";
+import { autoReloadPanelLocators } from "@tests/locators/locators";
+import AutoReloadPanel from "@/components/autoReloadPanel/autoReloadPanel";
 
 const WrappedAutoReloadComponent = () => {
   return (
     <BrowserRouter>
-      <AutoReloadPanel togglePolling={jest.fn()} lastRefreshed={10}/>
+      <AutoReloadPanel togglePolling={vi.fn()} lastRefreshed={10}/>
     </BrowserRouter>
   )
 }

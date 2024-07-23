@@ -26,12 +26,11 @@ import { BrowserRouter } from "react-router-dom";
  * and we would be verifying whether the UI is correct, we can skip the cleanup
  * and leave it for after all the tests run - saving test time
  */
-import "@testing-library/react/dont-cleanup-after-each";
 import { render, screen } from "@testing-library/react";
 
-import { overviewLocators } from "./locators/locators";
-import { overviewServer } from "./mocks/overviewMocks/overviewServer";
-import { Overview } from "../views/overview/overview";
+import { overviewLocators } from "@tests/locators/locators";
+import { overviewServer } from "@tests/mocks/overviewMocks/overviewServer";
+import { Overview } from "@/views/overview/overview";
 
 const WrappedOverviewComponent = () => {
   return (

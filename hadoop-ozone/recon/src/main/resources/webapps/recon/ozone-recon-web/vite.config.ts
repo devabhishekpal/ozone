@@ -14,6 +14,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+/// <reference types="vite/client" />
+/// <reference types="vitest" />
 
 import { defineConfig, splitVendorChunkPlugin } from 'vite';
 import { resolve } from 'path';
@@ -54,7 +56,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": pathResolve('src')
+      "@": pathResolve('src'),
+      "@tests": pathResolve('src/__tests__')
     }
   },
   css: {
@@ -71,13 +74,10 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    setupFiles: './src/setupTests.ts',
+    setupFiles: 'src/__tests__/setupTests.ts',
+    environment: 'jsdom',
+    include: ["src/__tests__/*"],
     css: true,
-    reporters: ['verbose'],
-    coverage: {
-      reporter: ['text', 'json', 'html'],
-      include: ['src/**/*'],
-      exclude: []
-    }
+    reporters: ['verbose']
   }
 })
