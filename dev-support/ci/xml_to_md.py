@@ -25,6 +25,7 @@ from collections import namedtuple
 from pathlib import Path
 import sys
 
+
 Property = namedtuple('Property', ['name', 'value', 'tag', 'description'])
 
 def extract_xml_from_jar(jar_path, xml_filename):
