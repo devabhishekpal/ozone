@@ -19,7 +19,7 @@
 import moment from 'moment';
 import { notification } from 'antd';
 
-export const getCapacityPercent = (used: number, total: number) => Math.round((used / total) * 100);
+export const getCapacityPercent = (used: number, total: number) => Math.round( (used / total) * 100);
 
 export const timeFormat = (time: number) => time > 0 ?
   moment(time).format('lll') : 'NA';
