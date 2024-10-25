@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["*"],
+      "@scm/*": ["scm/*"],
+      "@ozone-manager/*": ["ozone-manager/*"],
+      "@recon/*": ["recon/*"],
+      "@shared/*": ["shared-components/*"]
+    }
+  }
+}

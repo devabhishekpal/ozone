@@ -1,0 +1,4 @@
+packages:
+  - "./hadoop-ozone/recon/src/main/resources/webapps/recon/ozone-recon-web/**"
+  - "./hadoop-ozone/ozone-manager/src/main/resources/webapps/ozoneManager/**"
+  - "./hadoop-hdds/server-scm/src/main/resources/webapps/scm/**"
