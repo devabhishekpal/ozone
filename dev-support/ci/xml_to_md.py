@@ -27,6 +27,7 @@ import sys
 
 Property = namedtuple('Property', ['name', 'value', 'tag', 'description'])
 
+
 def extract_xml_from_jar(jar_path, xml_filename):
     xml_files = []
     with zipfile.ZipFile(jar_path, 'r') as jar:
