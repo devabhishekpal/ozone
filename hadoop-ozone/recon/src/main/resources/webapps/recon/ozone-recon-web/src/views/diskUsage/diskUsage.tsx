@@ -304,15 +304,14 @@ export class DiskUsage extends React.Component<Record<string, object>, IDUState>
   // Show the right side panel that display metadata details of path
   showMetadataDetails(e, path: string): void {
     const summaryEndpoint = `/api/v1/namespace/summary?path=${path}`;
-    const keys = [];
-    const values = [];
 
     const { request: summaryRequest, controller: summaryNewController } = AxiosGetHelper(summaryEndpoint, cancelSummarySignal);
     cancelSummarySignal = summaryNewController;
+    const metadata: Record<string, any> = {};
+
     summaryRequest.then(response => {
       const summaryResponse = response.data;
-      keys.push('Entity Type');
-      values.push(summaryResponse.type);
+      metadata['Entity Type'] = summaryResponse.type;
 
       // If status is INITIALIZING, we cannot add entities for metadata as it will cause null failures and showing Warning message
       // Hence we only add Entities if the status is not INITIALIZING 
@@ -327,14 +326,12 @@ export class DiskUsage extends React.Component<Record<string, object>, IDUState>
           const { request: metadataRequest, controller: metadataNewController } = AxiosGetHelper(keyEndpoint, cancelKeyMetadataSignal);
           cancelKeyMetadataSignal = metadataNewController;
           metadataRequest.then(response => {
-            keys.push('File Size');
-            values.push(byteToSize(response.data.size, 3));
-            keys.push('File Size With Replication');
-            values.push(byteToSize(response.data.sizeWithReplica, 3));
+            metadata['File Size'] = byteToSize(response.data.size, 3);
+            metadata['File Size With Replication'] = byteToSize(response.data.sizeWithReplica, 3);
             this.setState({
               showPanel: true,
-              panelKeys: keys,
-              panelValues: values
+              panelKeys: Object.keys(metadata),
+              panelValues: Object.values(metadata)
             });
           }).catch(error => {
             this.setState({
@@ -352,142 +349,109 @@ export class DiskUsage extends React.Component<Record<string, object>, IDUState>
         }
 
         if (summaryResponse.countStats?.numVolume !== undefined && summaryResponse.countStats?.numVolume !== -1) {
-          keys.push('Volumes');
-          values.push(summaryResponse.countStats.numVolume);
+          metadata['Volumes'] = summaryResponse.countStats.numVolume;
         }
 
         if (summaryResponse.countStats?.numBucket !== undefined && summaryResponse.countStats?.numBucket !== -1) {
-          keys.push('Buckets');
-          values.push(summaryResponse.countStats.numBucket);
+          metadata['Buckets'] = summaryResponse.countStats.numBucket;
         }
 
         if (summaryResponse.countStats?.numDir !== undefined && summaryResponse.countStats?.numDir !== -1) {
-          keys.push('Total Directories');
-          values.push(summaryResponse.countStats.numDir);
+          metadata['Total Directories'] = summaryResponse.countStats.numDir;
         }
 
         if (summaryResponse.countStats?.numKey !== undefined && summaryResponse.countStats?.numKey !== -1) {
-          keys.push('Total Keys');
-          values.push(summaryResponse.countStats.numKey);
+          metadata['Total Keys'] = summaryResponse.countStats.numKey;
         }
 
         if (summaryResponse.objectInfo?.bucketName !== undefined && summaryResponse.objectInfo?.bucketName !== -1) {
-          keys.push('Bucket Name');
-          values.push(summaryResponse.objectInfo.bucketName);
+          metadata['Bucket Name'] = summaryResponse.objectInfo.bucketName;
         }
 
         if (summaryResponse.objectInfo?.bucketLayout !== undefined && summaryResponse.objectInfo?.bucketLayout !== -1) {
-          keys.push('Bucket Layout');
-          values.push(summaryResponse.objectInfo.bucketLayout);
+          metadata['Bucket Layout'] = summaryResponse.objectInfo.bucketLayout;
         }
 
         if (summaryResponse.objectInfo?.creationTime !== undefined && summaryResponse.objectInfo?.creationTime !== -1) {
-          keys.push('Creation Time');
-          values.push(moment(summaryResponse.objectInfo.creationTime).format('ll LTS'));
+          metadata['Creation Time'] = moment(summaryResponse.objectInfo.creationTime).format('ll LTS');
         }
 
         if (summaryResponse.objectInfo?.dataSize !== undefined && summaryResponse.objectInfo?.dataSize !== -1) {
-          keys.push('Data Size');
-          values.push(byteToSize(summaryResponse.objectInfo.dataSize, 3));
+          metadata['Data Size'] = byteToSize(summaryResponse.objectInfo.dataSize, 3);
         }
 
         if (summaryResponse.objectInfo?.encInfo !== undefined && summaryResponse.objectInfo?.encInfo !== -1) {
-          keys.push('ENC Info');
-          values.push(summaryResponse.objectInfo.encInfo);
+          metadata['ENC Info'] = summaryResponse.objectInfo.encInfo;
         }
 
         if (summaryResponse.objectInfo?.fileName !== undefined && summaryResponse.objectInfo?.fileName !== -1) {
-          keys.push('File Name');
-          values.push(summaryResponse.objectInfo.fileName);
+          metadata['File Name'] = summaryResponse.objectInfo.fileName;
         }
 
         if (summaryResponse.objectInfo?.keyName !== undefined && summaryResponse.objectInfo?.keyName !== -1) {
-          keys.push('Key Name');
-          values.push(summaryResponse.objectInfo.keyName);
+          metadata['Key Name'] = summaryResponse.objectInfo.keyName;
         }
 
         if (summaryResponse.objectInfo?.modificationTime !== undefined && summaryResponse.objectInfo?.modificationTime !== -1) {
-          keys.push('Modification Time');
-          values.push(moment(summaryResponse.objectInfo.modificationTime).format('ll LTS'));
+          metadata['Modification Time'] = moment(summaryResponse.objectInfo.modificationTime).format('ll LTS')
         }
 
         if (summaryResponse.objectInfo?.name !== undefined && summaryResponse.objectInfo?.name !== -1) {
-          keys.push('Name');
-          values.push(summaryResponse.objectInfo.name);
+          metadata['Name'] = summaryResponse.objectInfo.name;
         }
 
         if (summaryResponse.objectInfo?.owner !== undefined && summaryResponse.objectInfo?.owner !== -1) {
-          keys.push('Owner');
-          values.push(summaryResponse.objectInfo.owner);
+          metadata['Owner'] = summaryResponse.objectInfo.owner;
         }
 
         if (summaryResponse.objectInfo?.quotaInBytes !== undefined && summaryResponse.objectInfo?.quotaInBytes !== -1) {
-          keys.push('Quota In Bytes');
-          values.push(byteToSize(summaryResponse.objectInfo.quotaInBytes, 3));
+          metadata['Quota In Bytes'] = byteToSize(summaryResponse.objectInfo.quotaInBytes, 3);
         }
 
         if (summaryResponse.objectInfo?.quotaInNamespace !== undefined && summaryResponse.objectInfo?.quotaInNamespace !== -1) {
-          keys.push('Quota In Namespace');
-          values.push(byteToSize(summaryResponse.objectInfo.quotaInNamespace, 3));
+          metadata['Quota In Namespace'] = byteToSize(summaryResponse.objectInfo.quotaInNamespace, 3);
         }
 
         if (summaryResponse.objectInfo?.replicationConfig?.replicationFactor !== undefined && summaryResponse.objectInfo?.replicationConfig?.replicationFactor !== -1) {
-          keys.push('Replication Factor');
-          values.push(summaryResponse.objectInfo.replicationConfig.replicationFactor);
+          metadata['Replication Factor'] = summaryResponse.objectInfo.replicationConfig.replicationFactor;
         }
 
         if (summaryResponse.objectInfo?.replicationConfig?.replicationType !== undefined && summaryResponse.objectInfo?.replicationConfig?.replicationType !== -1) {
-          keys.push('Replication Type');
-          values.push(summaryResponse.objectInfo.replicationConfig.replicationType);
+          metadata['Replication Type'] = summaryResponse.objectInfo.replicationConfig.replicationType
         }
 
         if (summaryResponse.objectInfo?.replicationConfig?.requiredNodes !== undefined && summaryResponse.objectInfo?.replicationConfig?.requiredNodes !== -1) {
-          keys.push('Replication Required Nodes');
-          values.push(summaryResponse.objectInfo.replicationConfig.requiredNodes);
+          metadata['Replication Required Nodes'] = summaryResponse.objectInfo.replicationConfig.requiredNodes;
         }
 
         if (summaryResponse.objectInfo?.sourceBucket !== undefined && summaryResponse.objectInfo?.sourceBucket !== -1) {
-          keys.push('Source Bucket');
-          values.push(summaryResponse.objectInfo.sourceBucket);
+          metadata['Source Bucket'] = summaryResponse.objectInfo.sourceBucket;
         }
 
         if (summaryResponse.objectInfo?.sourceVolume !== undefined && summaryResponse.objectInfo?.sourceVolume !== -1) {
-          keys.push('Source Volume');
-          values.push(summaryResponse.objectInfo.sourceVolume);
+          metadata['Source Volume'] = summaryResponse.objectInfo.sourceVolume;
         }
 
         if (summaryResponse.objectInfo?.storageType !== undefined && summaryResponse.objectInfo?.storageType !== -1) {
-          keys.push('Storage Type');
-          values.push(summaryResponse.objectInfo.storageType);
+          metadata['Storage Type'] = summaryResponse.objectInfo.storageType;
         }
 
         if (summaryResponse.objectInfo?.usedBytes !== undefined && summaryResponse.objectInfo?.usedBytes !== -1) {
-          keys.push('Used Bytes');
-          values.push(summaryResponse.objectInfo.usedBytes);
+          metadata['Used Bytes'] = summaryResponse.objectInfo.usedBytes;
         }
 
         if (summaryResponse.objectInfo?.usedNamespace !== undefined && summaryResponse.objectInfo?.usedNamespace !== -1) {
-          keys.push('Used NameSpaces');
-          values.push(summaryResponse.objectInfo.usedNamespace);
+          metadata['Used Namespaces'] = summaryResponse.objectInfo.usedNamespace;
         }
 
         if (summaryResponse.objectInfo?.volumeName !== undefined && summaryResponse.objectInfo?.volumeName !== -1) {
-          keys.push('Volume Name');
-          values.push(summaryResponse.objectInfo.volumeName);
+          metadata['Volume Name'] = summaryResponse.objectInfo.volumeName;
         }
 
         if (summaryResponse.objectInfo?.volume !== undefined && summaryResponse.objectInfo?.volume !== -1) {
-          keys.push('Volume');
-          values.push(summaryResponse.objectInfo.volume);
+          metadata['Volume'] = summaryResponse.objectInfo.volume;
         }
       }
-
-      // Show the right drawer
-      this.setState({
-        showPanel: true,
-        panelKeys: keys,
-        panelValues: values
-      });
     }).catch(error => {
       this.setState({
         isLoading: false,
@@ -520,19 +484,12 @@ export class DiskUsage extends React.Component<Record<string, object>, IDUState>
       // Append quota information
       // In case the object's quota isn't set
       if (quotaResponse.allowed !== undefined && quotaResponse.allowed !== -1) {
-        keys.push('Quota Allowed');
-        values.push(byteToSize(quotaResponse.allowed, 3));
+        metadata['Quota Allowed'] = byteToSize(quotaResponse.allowed, 3);
       }
 
       if (quotaResponse.used !== undefined && quotaResponse.used !== -1) {
-        keys.push('Quota Used');
-        values.push(byteToSize(quotaResponse.used, 3));
+        metadata['Quota Used'] = byteToSize(quotaResponse.used, 3);
       }
-      this.setState({
-        showPanel: true,
-        panelKeys: keys,
-        panelValues: values
-      });
     }).catch(error => {
       this.setState({
         isLoading: false,
@@ -540,11 +497,15 @@ export class DiskUsage extends React.Component<Record<string, object>, IDUState>
       });
       showDataFetchError(error.toString());
     });
+    this.setState({
+      showPanel: true,
+      panelKeys: Object.keys(metadata),
+      panelValues: Object.values(metadata)
+    });
   }
 
   render() {
     const { plotData, duResponse, returnPath, panelKeys, panelValues, showPanel, isLoading, inputPath, displayLimit } = this.state;
-
     const updateDisplayLimit: MenuProps['onClick'] = (e): void => {
       const res = Number.parseInt(e.key, 10);
       this.updatePieChart(this.state.inputPath, res);
