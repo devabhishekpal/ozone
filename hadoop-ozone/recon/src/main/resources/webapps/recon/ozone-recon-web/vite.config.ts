@@ -33,7 +33,6 @@ export default defineConfig({
     react({
       devTarget: "es2015" //SWC by default bypasses the build target, set dev target explicitly
     }),
-    splitVendorChunkPlugin()
   ],
   build: {
     target: "es2015",
@@ -50,6 +49,15 @@ export default defineConfig({
           else {
             return `static/media/[name]-[hash].${extName}`
           }
+        },
+        manualChunks: {
+          antd: ['antd', '@ant-design/icons', 'less'],
+          echarts: ['echarts'],
+          agchart: ['ag-charts-community', 'ag-charts-react'],
+          router: ['react-router', 'react-router-dom'],
+          utilities: ['classnames', 'filesize', 'pretty-ms', 'moment'],
+          react: ['react', 'react-dom'],
+          fonts: ['@fontsource/roboto']
         }
       }
     }
