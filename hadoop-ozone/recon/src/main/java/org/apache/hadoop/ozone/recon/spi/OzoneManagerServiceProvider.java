@@ -45,4 +45,5 @@ public interface OzoneManagerServiceProvider {
    * @return whether the trigger happened or not
    */
   boolean triggerSyncDataFromOMImmediately();
+
 }

@@ -36,11 +36,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Iterators;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.hadoop.hdds.recon.ReconConfigKeys;
+import org.apache.hadoop.hdds.utils.TransactionInfo;
 import org.apache.hadoop.hdds.utils.db.RocksDatabase;
 import org.apache.hadoop.hdds.utils.db.Table;
 import org.apache.hadoop.hdds.utils.db.TableIterator;
@@ -135,6 +137,9 @@ public class OzoneManagerServiceProviderImpl
   private ThreadFactory threadFactory;
   private ReconContext reconContext;
   private ReconTaskStatusUpdaterManager taskStatusUpdaterManager;
+
+  private final AtomicReference<TransactionInfo> reconTransactionInfo
+      = new AtomicReference<>(TransactionInfo.DEFAULT_VALUE);
 
   /**
    * OM Snapshot related task names.
@@ -734,6 +739,14 @@ public class OzoneManagerServiceProviderImpl
 
   public static Logger getLogger() {
     return LOG;
+  }
+
+  public void setTransactionInfo(TransactionInfo info) {
+    reconTransactionInfo.set(info);
+  }
+
+  public TransactionInfo getTransactionInfo() {
+    return reconTransactionInfo.get();
   }
 }
 
