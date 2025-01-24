@@ -1,4 +1,4 @@
-package org.apache.hadoop.ozone.recon;
+package org.apache.hadoop.ozone.recon.ratis;
 
 import org.apache.ratis.protocol.RaftGroup;
 import org.apache.ratis.protocol.RaftGroupId;

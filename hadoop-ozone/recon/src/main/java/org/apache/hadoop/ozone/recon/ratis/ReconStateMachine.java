@@ -1,4 +1,4 @@
-package org.apache.hadoop.ozone.recon;
+package org.apache.hadoop.ozone.recon.ratis;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 

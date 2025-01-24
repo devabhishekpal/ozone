@@ -1,4 +1,4 @@
-package org.apache.hadoop.ozone.recon;
+package org.apache.hadoop.ozone.recon.ratis;
 
 import org.apache.hadoop.hdds.utils.TransactionInfo;
 import org.apache.hadoop.hdds.utils.db.BatchOperation;
