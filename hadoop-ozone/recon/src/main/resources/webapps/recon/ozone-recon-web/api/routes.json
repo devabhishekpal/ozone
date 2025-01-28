@@ -1,5 +1,11 @@
 {
   "/api/v1/*": "/$1",
+  "/containers/1/keys": "/twoKeys",
+  "/containers/2/keys": "/threeKeys",
+  "/containers/4/keys": "/twoKeys",
+  "/containers/5/keys": "/twoKeys",
+  "/containers/7/keys": "/threeKeys",
+  "/containers/9/keys": "/twoKeys",
   "/containers/:id/keys": "/keys",
   "/utilization/fileCount": "/fileSizeCounts",
   "/utilization/containerCount": "/containerCount",
