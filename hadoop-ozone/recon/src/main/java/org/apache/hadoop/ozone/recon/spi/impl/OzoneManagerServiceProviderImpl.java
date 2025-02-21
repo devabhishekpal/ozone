@@ -499,6 +499,7 @@ public class OzoneManagerServiceProviderImpl
         .build();
     long startTime = Time.monotonicNow();
     DBUpdates dbUpdates = ozoneManagerClient.getDBUpdates(dbUpdatesRequest);
+    metrics.incrDeltaUpdateRequests();
     metrics.updateDeltaRequestLatency(Time.monotonicNow() - startTime);
 
     int numUpdates = 0;
@@ -523,6 +524,7 @@ public class OzoneManagerServiceProviderImpl
           }
         }
       }
+      metrics.incrDeltaUpdateWrites();
       metrics.updateDeltaUpdateWriteLatency(Time.monotonicNow() - startTime);
     }
     long lag = latestSequenceNumberOfOM == -1 ? 0 :

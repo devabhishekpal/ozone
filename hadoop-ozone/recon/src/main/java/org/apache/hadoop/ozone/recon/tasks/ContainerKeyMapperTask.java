@@ -104,13 +104,12 @@ public class ContainerKeyMapperTask implements ReconOmTask {
     Map<Long, Long> containerKeyCountMap = new HashMap<>();
     try {
       LOG.debug("Starting a 'reprocess' run of ContainerKeyMapperTask.");
-
+      long startTime = Time.monotonicNow();
       // initialize new container DB
       reconContainerMetadataManager
               .reinitWithNewContainerDataFromOm(new HashMap<>());
 
       // loop over both key table and file table
-      long startTime = Time.monotonicNow();
       try {
         for (BucketLayout layout : Arrays.asList(BucketLayout.LEGACY,
             BucketLayout.FILE_SYSTEM_OPTIMIZED)) {
@@ -147,6 +146,7 @@ public class ContainerKeyMapperTask implements ReconOmTask {
           containerKeyCountMap)) {
         LOG.error("Unable to flush Container Key Count and " +
             "remaining Container Key information to the DB");
+        metrics.incrTaskReprocessFailureCount();
         return new ImmutablePair<>(getTaskName(), false);
       }
 
