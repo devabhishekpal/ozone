@@ -161,9 +161,12 @@ const ContainerTable: React.FC<ContainerTableProps> = ({
     );
   }
 
-  function loadRowData(containerID: number) {
+  function loadRowData(containerID: number, lastKey: string = '', pageNum: number = 1) {
+    const containerKeyEndpoint = (lastKey !== '')
+      ? `/api/v1/containers/${containerID}/keys?limit=10&prevKey=${lastKey}`
+      : `/api/v1/containers/${containerID}/keys?limit=10`
     const { request, controller } = AxiosGetHelper(
-      `/api/v1/containers/${containerID}/keys`,
+      containerKeyEndpoint,
       cancelSignal.current
     );
     cancelSignal.current = controller;
@@ -176,7 +179,8 @@ const ContainerTable: React.FC<ContainerTableProps> = ({
           ...expandedRow[containerID],
           loading: false,
           dataSource: containerKeysResponse.keys,
-          totalCount: containerKeysResponse.totalCount
+          totalCount: containerKeysResponse.totalCount,
+          lastKey: containerKeysResponse.lastKey,
         }
       });
     }).catch(error => {
@@ -215,8 +219,11 @@ const ContainerTable: React.FC<ContainerTableProps> = ({
     const containerId = record.containerID
     const containerKeys: ExpandedRowState = expandedRow[containerId];
     const dataSource = containerKeys?.dataSource ?? [];
+    const lastKey = containerKeys?.lastKey ?? '';
     const paginationConfig: TablePaginationConfig = {
-      showTotal: (total: number, range) => `${range[0]}-${range[1]} of ${total} Keys`
+      total: containerKeys?.totalCount ?? 0,
+      showSizeChanger: false,
+      onChange: (page, _pageSize) => loadRowData(containerId, lastKey, page)
     }
 
     return (

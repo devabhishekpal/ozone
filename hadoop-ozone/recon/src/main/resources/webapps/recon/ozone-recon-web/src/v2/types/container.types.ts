@@ -60,6 +60,7 @@ export type KeyResponse = {
 export type ContainerKeysResponse = {
   totalCount: number;
   keys: KeyResponse[];
+  lastKey: string;
 }
 
 export type ContainerTableProps = {
@@ -82,6 +83,9 @@ export type ExpandedRowState = {
   containerId: number;
   dataSource: KeyResponse[];
   totalCount: number;
+  lastKey: string;
+  prevKey: string;
+  pageNum: number;
 }
 
 export type ContainerState = {
