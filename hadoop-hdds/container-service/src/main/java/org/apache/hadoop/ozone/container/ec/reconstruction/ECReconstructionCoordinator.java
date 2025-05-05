@@ -114,6 +114,7 @@ public class ECReconstructionCoordinator implements Closeable {
   private final ECReconstructionMetrics metrics;
   private final StateContext context;
   private final OzoneClientConfig ozoneClientConfig;
+  private final ECValidator ecValidator;
 
   public ECReconstructionCoordinator(
       ConfigurationSource conf, CertificateClient certificateClient,
@@ -139,6 +140,7 @@ public class ECReconstructionCoordinator implements Closeable {
     tokenHelper = new TokenHelper(new SecurityConfig(conf), secretKeyClient);
     this.clientMetrics = ContainerClientMetrics.acquire();
     this.metrics = metrics;
+    ecValidator = new ECValidator(ozoneClientConfig);
   }
 
   public void reconstructECContainerGroup(long containerID,
@@ -267,6 +269,8 @@ public class ECReconstructionCoordinator implements Closeable {
         this.ecReconstructReadExecutor,
         clientConfig)) {
 
+      ecValidator.setEcConfigData(repConfig);
+
       ECBlockOutputStream[] targetBlockStreams =
           new ECBlockOutputStream[toReconstructIndexes.size()];
       ECBlockOutputStream[] emptyBlockStreams =
@@ -336,6 +340,7 @@ public class ECReconstructionCoordinator implements Closeable {
         List<ECBlockOutputStream> allStreams = new ArrayList<>(Arrays.asList(targetBlockStreams));
         allStreams.addAll(Arrays.asList(emptyBlockStreams));
         for (ECBlockOutputStream targetStream : allStreams) {
+          ecValidator.validateChecksum(targetStream, blockDataGroup);
           targetStream.executePutBlock(true, true, blockLocationInfo.getLength(), blockDataGroup);
           checkFailures(targetStream, targetStream.getCurrentPutBlkResponseFuture());
         }
