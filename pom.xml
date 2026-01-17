@@ -108,7 +108,7 @@
     <jakarta.annotation.version>2.1.1</jakarta.annotation.version>
     <jakarta.inject.version>2.6.1</jakarta.inject.version>
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
-    <java.dev.jna.version>5.2.0</java.dev.jna.version>
+    <java.dev.jna.version>5.18.1</java.dev.jna.version>
     <java.security.egd>file:///dev/urandom</java.security.egd>
     <javac.version>8</javac.version>
     <javassist.version>3.30.2-GA</javassist.version>
