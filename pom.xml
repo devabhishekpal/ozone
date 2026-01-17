@@ -215,7 +215,7 @@
     <sonar.java.binaries>${basedir}/target/classes</sonar.java.binaries>
     <sonar.organization>apache</sonar.organization>
     <sonar.projectKey>hadoop-ozone</sonar.projectKey>
-    <sortpom-maven-plugin.version>3.0.1</sortpom-maven-plugin.version>
+    <sortpom-maven-plugin.version>3.4.1</sortpom-maven-plugin.version>
     <spotbugs.version>3.1.12.2</spotbugs.version>
     <spring.version>5.3.39</spring.version>
     <sqlite.version>3.51.1.0</sqlite.version>
