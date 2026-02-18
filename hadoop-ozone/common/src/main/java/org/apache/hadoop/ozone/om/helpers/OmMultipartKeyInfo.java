@@ -74,6 +74,11 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
    */
   private final long parentID;
 
+  // This stores the schema version of the multipart key.
+  // 0 - Legacy Schema -> Uses the same table to store the multipart part info
+  // 1 - New Schema -> Uses a separate table to store the multipart part info
+  private final byte schemaVersion;
+
   public static Codec<OmMultipartKeyInfo> getCodec() {
     return CODEC;
   }
@@ -170,6 +175,7 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     this.replicationConfig = b.replicationConfig;
     this.partKeyInfoMap = new PartKeyInfoMap(b.partKeyInfoList);
     this.parentID = b.parentID;
+    this.schemaVersion = b.schemaVersion;
   }
 
   /** Copy constructor. */
@@ -183,6 +189,7 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     // so here we can directly pass in partKeyInfoMap
     this.partKeyInfoMap = b.partKeyInfoMap;
     this.parentID = b.parentID;
+    this.schemaVersion = b.schemaVersion;
   }
 
   /**
@@ -222,6 +229,10 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     return replicationConfig;
   }
 
+  public byte getSchemaVersion() {
+    return schemaVersion;
+  }
+
   public Builder toBuilder() {
     return new Builder(this);
   }
@@ -235,6 +246,7 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     private ReplicationConfig replicationConfig;
     private final TreeMap<Integer, PartKeyInfo> partKeyInfoList;
     private long parentID;
+    private byte schemaVersion;
 
     public Builder() {
       this.partKeyInfoList = new TreeMap<>();
@@ -246,10 +258,14 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
       this.creationTime = multipartKeyInfo.creationTime;
       this.replicationConfig = multipartKeyInfo.replicationConfig;
       this.partKeyInfoList = new TreeMap<>();
-      for (PartKeyInfo partKeyInfo : multipartKeyInfo.partKeyInfoMap) {
-        this.partKeyInfoList.put(partKeyInfo.getPartNumber(), partKeyInfo);
+      if (multipartKeyInfo.getSchemaVersion() == 0) {
+        for (PartKeyInfo partKeyInfo : multipartKeyInfo.partKeyInfoMap) {
+          this.partKeyInfoList.put(partKeyInfo.getPartNumber(), partKeyInfo);
+        }
       }
+
       this.parentID = multipartKeyInfo.parentID;
+      this.schemaVersion = multipartKeyInfo.schemaVersion;
     }
 
     public Builder setUploadID(String uploadId) {
@@ -298,6 +314,11 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
       return this;
     }
 
+    public Builder setSchemaVersion(byte schemaVersion) {
+      this.schemaVersion = schemaVersion;
+      return this;
+    }
+
     @Override
     protected OmMultipartKeyInfo buildObject() {
       return new OmMultipartKeyInfo(this);
@@ -312,8 +333,10 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
   public static Builder builderFromProto(
       MultipartKeyInfo multipartKeyInfo) {
     final SortedMap<Integer, PartKeyInfo> list = new TreeMap<>();
-    multipartKeyInfo.getPartKeyInfoListList().forEach(partKeyInfo ->
+    if (!multipartKeyInfo.hasSchemaVersion() || multipartKeyInfo.getSchemaVersion() == 0) {
+      multipartKeyInfo.getPartKeyInfoListList().forEach(partKeyInfo ->
         list.put(partKeyInfo.getPartNumber(), partKeyInfo));
+    }
 
     final ReplicationConfig replicationConfig = ReplicationConfig.fromProto(
         multipartKeyInfo.getType(),
@@ -328,7 +351,8 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
         .setPartKeyInfoList(list)
         .setObjectID(multipartKeyInfo.getObjectID())
         .setUpdateID(multipartKeyInfo.getUpdateID())
-        .setParentID(multipartKeyInfo.getParentID());
+        .setParentID(multipartKeyInfo.getParentID())
+        .setSchemaVersion((byte) multipartKeyInfo.getSchemaVersion());
   }
 
   /**
@@ -352,7 +376,8 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
         .setType(replicationConfig.getReplicationType())
         .setObjectID(getObjectID())
         .setUpdateID(getUpdateID())
-        .setParentID(parentID);
+        .setParentID(parentID)
+        .setSchemaVersion(schemaVersion);
 
     if (replicationConfig instanceof ECReplicationConfig) {
       ECReplicationConfig ecConf = (ECReplicationConfig) replicationConfig;

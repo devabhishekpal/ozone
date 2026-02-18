@@ -35,6 +35,7 @@ import org.apache.hadoop.ozone.om.helpers.OmDBUserPrincipalInfo;
 import org.apache.hadoop.ozone.om.helpers.OmDirectoryInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.OmPrefixInfo;
 import org.apache.hadoop.ozone.om.helpers.OmVolumeArgs;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
@@ -80,14 +81,15 @@ import org.apache.ozone.compaction.log.CompactionLogEntry;
  * <pre>
  * {@code
  * Object Store (OBS) Tables:
- * |-----------------------------------------------------------------------|
- * |        Column Family |                           Mapping              |
- * |-----------------------------------------------------------------------|
- * |             keyTable | /volume/bucket/key          :- KeyInfo         |
- * |         deletedTable | /volume/bucket/key          :- RepeatedKeyInfo |
- * |         openKeyTable | /volume/bucket/key/id       :- KeyInfo         |
- * |   multipartInfoTable | /volume/bucket/key/uploadId :- parts           |
- * |-----------------------------------------------------------------------|
+ * |----------------------------------------------------------------------------------|
+ * |        Column Family |                           Mapping                         |
+ * |----------------------------------------------------------------------------------|
+ * |             keyTable | /volume/bucket/key                     :- KeyInfo         |
+ * |         deletedTable | /volume/bucket/key                     :- RepeatedKeyInfo |
+ * |         openKeyTable | /volume/bucket/key/id                  :- KeyInfo         |
+ * |   multipartInfoTable | /volume/bucket/key/uploadId            :- parts           |
+ * |  multipartPartsTable | /volume/bucket/key/uploadId/partNumber :- PartKeyInfo     |
+ * |----------------------------------------------------------------------------------|
  * }
  * </pre>
  * Note that "volume", "bucket" and "key" in OBS tables are names.
@@ -227,6 +229,13 @@ public final class OMDBDefinition extends DBDefinition.WithMap {
       = new DBColumnFamilyDefinition<>(MULTIPART_INFO_TABLE,
           StringCodec.get(),
           OmMultipartKeyInfo.getCodec());
+  
+   public static final String MULTIPART_PARTS_TABLE = "multipartPartsTable";
+   /** multipartPartsTable: /volume/bucket/key/uploadId/partNumber :- PartKeyInfo. */
+   public static final DBColumnFamilyDefinition<String, OmMultipartPartInfo> MULTIPART_PARTS_TABLE_DEF
+       = new DBColumnFamilyDefinition<>(MULTIPART_PARTS_TABLE,
+           StringCodec.get(),
+           OmMultipartPartInfo.getCodec());
 
   //---------------------------------------------------------------------------
   // File System Optimized (FSO) Tables:
@@ -327,6 +336,7 @@ public final class OMDBDefinition extends DBDefinition.WithMap {
           KEY_TABLE_DEF,
           META_TABLE_DEF,
           MULTIPART_INFO_TABLE_DEF,
+          MULTIPART_PARTS_TABLE_DEF,
           OPEN_FILE_TABLE_DEF,
           OPEN_KEY_TABLE_DEF,
           PREFIX_TABLE_DEF,

@@ -86,12 +86,24 @@ public class OmMultipartUpload {
         .getDbKey(volumeName, bucketName, keyName, uploadId);
   }
 
+  /**
+   * Get the multipart DB key for a given volume, bucket, key and upload ID.
+   * This is used to construct the key by using OM_KEY_PREFIX (/) as the separator.
+   * The path is constructed as: /volume/bucket/key/uploadId
+   * @return String representing the multipart DB key.
+   */
   public static String getDbKey(String volume, String bucket, String key,
       String uploadId) {
     return getDbKey(volume, bucket, key) + OM_KEY_PREFIX + uploadId;
 
   }
 
+  /**
+   * Get the multipart DB key for a given volume, bucket and key.
+   * This is used to construct the key by using OM_KEY_PREFIX (/) as the separator.
+   * The path is constructed as: /volume/bucket/key
+   * @return String representing the multipart DB key without uploadId.
+   */
   public static String getDbKey(String volume, String bucket, String key) {
     return OM_KEY_PREFIX + volume + OM_KEY_PREFIX + bucket +
         OM_KEY_PREFIX + key;

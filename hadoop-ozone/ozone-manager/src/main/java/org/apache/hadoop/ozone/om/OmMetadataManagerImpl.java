@@ -108,6 +108,7 @@ import org.apache.hadoop.ozone.om.helpers.OmDirectoryInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfoGroup;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartUpload;
 import org.apache.hadoop.ozone.om.helpers.OmPrefixInfo;
 import org.apache.hadoop.ozone.om.helpers.OmVolumeArgs;
@@ -160,6 +161,7 @@ public class OmMetadataManagerImpl implements OMMetadataManager,
 
   private Table<String, OmKeyInfo> openKeyTable;
   private Table<String, OmMultipartKeyInfo> multipartInfoTable;
+  private Table<String, OmMultipartPartInfo> multipartPartTable;
   private Table<String, RepeatedOmKeyInfo> deletedTable;
 
   private Table<String, OmDirectoryInfo> dirTable;
@@ -386,6 +388,11 @@ public class OmMetadataManagerImpl implements OMMetadataManager,
     return multipartInfoTable;
   }
 
+  @Override
+  public Table<String, OmMultipartPartInfo> getMultipartPartTable() {
+    return multipartPartTable;
+  }
+
   /**
    * Start metadata manager.
    */
@@ -464,6 +471,7 @@ public class OmMetadataManagerImpl implements OMMetadataManager,
 
     openKeyTable = initializer.get(OMDBDefinition.OPEN_KEY_TABLE_DEF);
     multipartInfoTable = initializer.get(OMDBDefinition.MULTIPART_INFO_TABLE_DEF);
+    multipartPartTable = initializer.get(OMDBDefinition.MULTIPART_PARTS_TABLE_DEF);
     deletedTable = initializer.get(OMDBDefinition.DELETED_TABLE_DEF);
 
     dirTable = initializer.get(OMDBDefinition.DIRECTORY_TABLE_DEF);
