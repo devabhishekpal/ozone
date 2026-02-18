@@ -168,6 +168,7 @@ public class S3InitiateMultipartUploadRequestWithFSO
           .setObjectID(pathInfoFSO.getLeafNodeObjectId())
           .setUpdateID(transactionLogIndex)
           .setParentID(pathInfoFSO.getLastKnownParentId())
+          .setSchemaVersion((byte) 1)
           .build();
 
       omKeyInfo = new OmKeyInfo.Builder()

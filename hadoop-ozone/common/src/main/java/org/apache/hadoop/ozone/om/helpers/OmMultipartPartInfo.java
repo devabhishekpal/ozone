@@ -1,16 +1,18 @@
 package org.apache.hadoop.ozone.om.helpers;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileEncryptionInfo;
 import org.apache.hadoop.hdds.utils.db.Codec;
 import org.apache.hadoop.hdds.utils.db.DelegatedCodec;
 import org.apache.hadoop.hdds.utils.db.Proto2Codec;
-import org.apache.hadoop.ozone.OzoneAcl;
+import org.apache.hadoop.ozone.ClientVersion;
+import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.KeyLocationList;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.MultipartPartInfo;
 import org.apache.hadoop.ozone.protocolPB.OMPBHelper;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * This class represents a part of a multipart upload key.
@@ -29,9 +31,11 @@ public final class OmMultipartPartInfo extends WithMetadata{
   private final String keyName;
   private final long dataSize;
   private final long modificationTime;
+  private final List<OmKeyLocationInfoGroup> keyLocationInfos;
   private final FileEncryptionInfo encInfo;
   private final FileChecksum fileChecksum;
 
+  public static final String OPEN_KEY_METADATA_KEY = "multipart.openKey";
 
   public static Codec<OmMultipartPartInfo> getCodec() {
     return CODEC;
@@ -46,6 +50,7 @@ public final class OmMultipartPartInfo extends WithMetadata{
     this.keyName = b.keyName;
     this.dataSize = b.dataSize;
     this.modificationTime = b.modificationTime;
+    this.keyLocationInfos = Collections.unmodifiableList(b.keyLocationInfos);
     this.encInfo = b.encInfo;
     this.fileChecksum = b.fileChecksum;
   }
@@ -58,10 +63,12 @@ public final class OmMultipartPartInfo extends WithMetadata{
     private String keyName;
     private long dataSize;
     private long modificationTime;
+    private List<OmKeyLocationInfoGroup> keyLocationInfos;
     private FileEncryptionInfo encInfo;
     private FileChecksum fileChecksum;
 
     protected Builder() {
+      this.keyLocationInfos = new ArrayList<>();
     }
 
     public Builder(OmMultipartPartInfo obj) {
@@ -73,6 +80,7 @@ public final class OmMultipartPartInfo extends WithMetadata{
       this.keyName = obj.keyName;
       this.dataSize = obj.dataSize;
       this.modificationTime = obj.modificationTime;
+      this.keyLocationInfos = new ArrayList<>(obj.keyLocationInfos);
       this.encInfo = obj.encInfo;
       this.fileChecksum = obj.fileChecksum;
     }
@@ -109,6 +117,11 @@ public final class OmMultipartPartInfo extends WithMetadata{
 
     public Builder setModificationTime(long modificationTime) {
       this.modificationTime = modificationTime;
+      return this;
+    }
+
+    public Builder setKeyLocationInfos(List<OmKeyLocationInfoGroup> keyLocationInfos) {
+      this.keyLocationInfos = new ArrayList<>(keyLocationInfos);
       return this;
     }
 
@@ -155,6 +168,7 @@ public final class OmMultipartPartInfo extends WithMetadata{
         .setKeyName(multipartPartInfo.getKeyName())
         .setDataSize(multipartPartInfo.getDataSize())
         .setModificationTime(multipartPartInfo.getModificationTime())
+        .setKeyLocationInfos(getKeyLocationInfosFromProto(multipartPartInfo))
         .setEncInfo(null);
 
     if (multipartPartInfo.hasFileEncryptionInfo()) {
@@ -176,16 +190,102 @@ public final class OmMultipartPartInfo extends WithMetadata{
   }
 
   public MultipartPartInfo getProto() {
-    return MultipartPartInfo.newBuilder()
+    MultipartPartInfo.Builder builder = MultipartPartInfo.newBuilder()
         .setPartName(partName)
         .setPartNumber(partNumber)
         .setVolumeName(volumeName)
         .setBucketName(bucketName)
         .setKeyName(keyName)
+        .addAllKeyLocationList(getKeyLocationInfosAsProto())
         .setDataSize(dataSize)
         .setModificationTime(modificationTime)
-        .setFileEncryptionInfo(OMPBHelper.convert(encInfo))
-        .setFileChecksum(OMPBHelper.convert(fileChecksum))
-        .build();
+        .addAllMetadata(KeyValueUtil.toProtobuf(getMetadata()));
+    if (encInfo != null) {
+      builder.setFileEncryptionInfo(OMPBHelper.convert(encInfo));
+    }
+    if (fileChecksum != null) {
+      builder.setFileChecksum(OMPBHelper.convert(fileChecksum));
+    }
+    return builder.build();
+  }
+
+  public String getPartName() {
+    return partName;
+  }
+
+  public int getPartNumber() {
+    return partNumber;
+  }
+
+  public String getVolumeName() {
+    return volumeName;
+  }
+
+  public String getBucketName() {
+    return bucketName;
+  }
+
+  public String getKeyName() {
+    return keyName;
+  }
+
+  public long getDataSize() {
+    return dataSize;
+  }
+
+  public long getModificationTime() {
+    return modificationTime;
+  }
+
+  public List<OmKeyLocationInfoGroup> getKeyLocationInfos() {
+    return keyLocationInfos;
+  }
+
+  public FileEncryptionInfo getEncInfo() {
+    return encInfo;
+  }
+
+  public FileChecksum getFileChecksum() {
+    return fileChecksum;
+  }
+
+  public static OmMultipartPartInfo from(
+      String volumeName, String bucketName, String keyName, String openKey,
+      String partName, int partNumber, OmKeyInfo omKeyInfo) {
+    Builder builder = new Builder()
+        .setPartName(partName)
+        .setPartNumber(partNumber)
+        .setVolumeName(volumeName)
+        .setBucketName(bucketName)
+        .setKeyName(keyName)
+        .setDataSize(omKeyInfo.getDataSize())
+        .setModificationTime(omKeyInfo.getModificationTime())
+        .setKeyLocationInfos(omKeyInfo.getKeyLocationVersions())
+        .addMetadata(OPEN_KEY_METADATA_KEY, openKey)
+        .addAllMetadata(omKeyInfo.getMetadata());
+    return builder.build();
+  }
+
+  public String getOpenKey() {
+    return getMetadata().get(OPEN_KEY_METADATA_KEY);
+  }
+
+  private List<KeyLocationList> getKeyLocationInfosAsProto() {
+    List<KeyLocationList> keyLocations = new ArrayList<>();
+    for (OmKeyLocationInfoGroup keyLocationInfoGroup : keyLocationInfos) {
+      keyLocations.add(keyLocationInfoGroup.getProtobuf(
+          true, ClientVersion.CURRENT_VERSION));
+    }
+    return keyLocations;
+  }
+
+  private static List<OmKeyLocationInfoGroup> getKeyLocationInfosFromProto(
+      MultipartPartInfo multipartPartInfo) {
+    List<OmKeyLocationInfoGroup> keyLocations = new ArrayList<>();
+    for (KeyLocationList keyLocationList
+        : multipartPartInfo.getKeyLocationListList()) {
+      keyLocations.add(OmKeyLocationInfoGroup.getFromProtobuf(keyLocationList));
+    }
+    return keyLocations;
   }
 }

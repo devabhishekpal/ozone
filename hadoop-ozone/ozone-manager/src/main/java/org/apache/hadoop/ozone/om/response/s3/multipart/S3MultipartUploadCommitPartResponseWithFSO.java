@@ -20,6 +20,7 @@ package org.apache.hadoop.ozone.om.response.s3.multipart;
 import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.BUCKET_TABLE;
 import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.DELETED_TABLE;
 import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.MULTIPART_INFO_TABLE;
+import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.MULTIPART_PARTS_TABLE;
 import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.OPEN_FILE_TABLE;
 
 import jakarta.annotation.Nonnull;
@@ -29,6 +30,7 @@ import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.response.CleanupTableInfo;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.OMResponse;
@@ -37,7 +39,7 @@ import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.OMRespo
  * Response for S3MultipartUploadCommitPartWithFSO request.
  */
 @CleanupTableInfo(cleanupTables = {OPEN_FILE_TABLE, DELETED_TABLE,
-    MULTIPART_INFO_TABLE, BUCKET_TABLE})
+    MULTIPART_INFO_TABLE, MULTIPART_PARTS_TABLE, BUCKET_TABLE})
 public class S3MultipartUploadCommitPartResponseWithFSO
         extends S3MultipartUploadCommitPartResponse {
 
@@ -51,12 +53,17 @@ public class S3MultipartUploadCommitPartResponseWithFSO
   public S3MultipartUploadCommitPartResponseWithFSO(
       @Nonnull OMResponse omResponse, String multipartKey, String openKey,
       @Nullable OmMultipartKeyInfo omMultipartKeyInfo,
+      @Nullable String multipartPartKey,
+      @Nullable OmMultipartPartInfo omMultipartPartInfo,
+      @Nullable String oldOpenKeyToDelete,
       @Nullable Map<String, RepeatedOmKeyInfo> keyToDeleteMap,
       @Nullable OmKeyInfo openPartKeyInfoToBeDeleted,
       @Nonnull OmBucketInfo omBucketInfo, long bucketId, @Nonnull BucketLayout bucketLayout) {
 
     super(omResponse, multipartKey, openKey, omMultipartKeyInfo,
-            keyToDeleteMap, openPartKeyInfoToBeDeleted,
+            multipartPartKey, omMultipartPartInfo, oldOpenKeyToDelete,
+            keyToDeleteMap,
+            openPartKeyInfoToBeDeleted,
             omBucketInfo, bucketId, bucketLayout);
   }
 }

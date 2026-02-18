@@ -165,12 +165,15 @@ public class S3MultipartUploadCompleteRequestWithFSO
       String dbMultipartOpenKey, OmKeyInfo omKeyInfo,
       List<OmKeyInfo> allKeyInfoToRemove, OmBucketInfo omBucketInfo,
       long volumeId, long bucketId, List<OmDirectoryInfo> missingParentInfos,
-      OmMultipartKeyInfo multipartKeyInfo) {
+      OmMultipartKeyInfo multipartKeyInfo,
+      List<String> multipartPartKeysToDelete,
+      List<String> multipartPartOpenKeysToDelete) {
 
     return new S3MultipartUploadCompleteResponseWithFSO(omResponse.build(),
         multipartKey, dbMultipartOpenKey, omKeyInfo, allKeyInfoToRemove,
         getBucketLayout(), omBucketInfo, volumeId, bucketId,
-        missingParentInfos, multipartKeyInfo);
+        missingParentInfos, multipartKeyInfo, multipartPartKeysToDelete,
+        multipartPartOpenKeysToDelete);
   }
 
   @Override

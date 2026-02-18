@@ -20,6 +20,7 @@ package org.apache.hadoop.ozone.om.response.s3.multipart;
 import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.BUCKET_TABLE;
 import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.DELETED_TABLE;
 import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.MULTIPART_INFO_TABLE;
+import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.MULTIPART_PARTS_TABLE;
 import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.OPEN_KEY_TABLE;
 import static org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.Status.NO_SUCH_MULTIPART_UPLOAD_ERROR;
 import static org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.Status.OK;
@@ -36,6 +37,7 @@ import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.response.CleanupTableInfo;
 import org.apache.hadoop.ozone.om.response.key.OmKeyResponse;
@@ -45,12 +47,15 @@ import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.OMRespo
  * Response for S3MultipartUploadCommitPart request.
  */
 @CleanupTableInfo(cleanupTables = {OPEN_KEY_TABLE, DELETED_TABLE,
-    MULTIPART_INFO_TABLE, BUCKET_TABLE})
+    MULTIPART_INFO_TABLE, MULTIPART_PARTS_TABLE, BUCKET_TABLE})
 public class S3MultipartUploadCommitPartResponse extends OmKeyResponse {
 
   private final String multipartKey;
+  private final String multipartPartKey;
   private final String openKey;
   private final OmMultipartKeyInfo omMultipartKeyInfo;
+  private final OmMultipartPartInfo omMultipartPartInfo;
+  private final String oldOpenKeyToDelete;
   private final Map<String, RepeatedOmKeyInfo> keyToDeleteMap;
   private final OmKeyInfo openPartKeyInfoToBeDeleted;
   private final OmBucketInfo omBucketInfo;
@@ -66,6 +71,9 @@ public class S3MultipartUploadCommitPartResponse extends OmKeyResponse {
   public S3MultipartUploadCommitPartResponse(@Nonnull OMResponse omResponse,
       String multipartKey, String openKey,
       @Nullable OmMultipartKeyInfo omMultipartKeyInfo,
+      @Nullable String multipartPartKey,
+      @Nullable OmMultipartPartInfo omMultipartPartInfo,
+      @Nullable String oldOpenKeyToDelete,
       @Nullable Map<String, RepeatedOmKeyInfo> keyToDeleteMap,
       @Nullable OmKeyInfo openPartKeyInfoToBeDeleted,
       @Nonnull OmBucketInfo omBucketInfo,
@@ -73,8 +81,11 @@ public class S3MultipartUploadCommitPartResponse extends OmKeyResponse {
       @Nonnull BucketLayout bucketLayout) {
     super(omResponse, bucketLayout);
     this.multipartKey = multipartKey;
+    this.multipartPartKey = multipartPartKey;
     this.openKey = openKey;
     this.omMultipartKeyInfo = omMultipartKeyInfo;
+    this.omMultipartPartInfo = omMultipartPartInfo;
+    this.oldOpenKeyToDelete = oldOpenKeyToDelete;
     this.keyToDeleteMap = keyToDeleteMap;
     this.openPartKeyInfoToBeDeleted = openPartKeyInfoToBeDeleted;
     this.omBucketInfo = omBucketInfo;
@@ -118,11 +129,22 @@ public class S3MultipartUploadCommitPartResponse extends OmKeyResponse {
 
     omMetadataManager.getMultipartInfoTable().putWithBatch(batchOperation,
         multipartKey, omMultipartKeyInfo);
+    if (multipartPartKey != null && omMultipartPartInfo != null) {
+      omMetadataManager.getMultipartPartTable().putWithBatch(batchOperation,
+          multipartPartKey, omMultipartPartInfo);
+    }
 
-    //  This information has been added to multipartKeyInfo. So, we can
-    //  safely delete part key info from open key table.
-    omMetadataManager.getOpenKeyTable(getBucketLayout())
-        .deleteWithBatch(batchOperation, openKey);
+    // Legacy schema stores key info in multipartKeyInfo, so open key can be
+    // deleted on commit. Schema v1 keeps each part's committed key in
+    // openKeyTable and tracks it via multipartPartTable metadata.
+    if (omMultipartKeyInfo.getSchemaVersion() == 0) {
+      omMetadataManager.getOpenKeyTable(getBucketLayout())
+          .deleteWithBatch(batchOperation, openKey);
+    }
+    if (oldOpenKeyToDelete != null) {
+      omMetadataManager.getOpenKeyTable(getBucketLayout())
+          .deleteWithBatch(batchOperation, oldOpenKeyToDelete);
+    }
 
     // update bucket usedBytes.
     omMetadataManager.getBucketTable().putWithBatch(batchOperation,

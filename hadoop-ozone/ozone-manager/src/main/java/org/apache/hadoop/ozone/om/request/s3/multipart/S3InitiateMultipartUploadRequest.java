@@ -195,6 +195,7 @@ public class S3InitiateMultipartUploadRequest extends OMKeyRequest {
               replicationConfig)
           .setObjectID(objectID)
           .setUpdateID(transactionLogIndex)
+          .setSchemaVersion((byte) 1)
           .build();
 
       omKeyInfo = new OmKeyInfo.Builder()

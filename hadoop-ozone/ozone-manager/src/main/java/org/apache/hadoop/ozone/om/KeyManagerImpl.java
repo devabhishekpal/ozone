@@ -139,7 +139,9 @@ import org.apache.hadoop.hdds.utils.db.cache.CacheValue;
 import org.apache.hadoop.net.CachedDNSToSwitchMapping;
 import org.apache.hadoop.net.DNSToSwitchMapping;
 import org.apache.hadoop.net.ScriptBasedMapping;
+import org.apache.hadoop.ozone.ClientVersion;
 import org.apache.hadoop.ozone.OmUtils;
+import org.apache.hadoop.ozone.OzoneConsts;
 import org.apache.hadoop.ozone.OzoneAcl;
 import org.apache.hadoop.ozone.common.BlockGroup;
 import org.apache.hadoop.ozone.common.DeletedBlock;
@@ -159,6 +161,7 @@ import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartUpload;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartUploadList;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartUploadListParts;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.OmPartInfo;
 import org.apache.hadoop.ozone.om.helpers.OzoneAclUtil;
 import org.apache.hadoop.ozone.om.helpers.OzoneFSUtils;
@@ -1138,8 +1141,39 @@ public class KeyManagerImpl implements KeyManager {
         throw new OMException("No Such Multipart upload exists for this key.",
             ResultCodes.NO_SUCH_MULTIPART_UPLOAD_ERROR);
       } else {
-        Iterator<PartKeyInfo> partKeyInfoMapIterator =
-            multipartKeyInfo.getPartKeyInfoMap().iterator();
+        Iterator<PartKeyInfo> partKeyInfoMapIterator;
+        if (multipartKeyInfo.getSchemaVersion() == 0) {
+          partKeyInfoMapIterator = multipartKeyInfo.getPartKeyInfoMap().iterator();
+        } else {
+          String prefix = multipartKey + OzoneConsts.OM_KEY_PREFIX;
+          TreeMap<Integer, PartKeyInfo> partMap = new TreeMap<>();
+          try (TableIterator<String, ? extends KeyValue<String, OmMultipartPartInfo>> iterator =
+                   metadataManager.getMultipartPartTable().iterator(prefix)) {
+            while (iterator.hasNext()) {
+              KeyValue<String, OmMultipartPartInfo> kv = iterator.next();
+              if (!kv.getKey().startsWith(prefix)) {
+                break;
+              }
+              OmMultipartPartInfo partInfo = kv.getValue();
+              String partOpenKey = partInfo.getOpenKey();
+              if (partOpenKey == null) {
+                continue;
+              }
+              OmKeyInfo omPartKeyInfo = metadataManager.getOpenKeyTable(bucketLayout)
+                  .get(partOpenKey);
+              if (omPartKeyInfo != null) {
+                PartKeyInfo partKeyInfo = PartKeyInfo.newBuilder()
+                    .setPartName(partInfo.getPartName())
+                    .setPartNumber(partInfo.getPartNumber())
+                    .setPartKeyInfo(omPartKeyInfo.getProtobuf(
+                        ClientVersion.CURRENT_VERSION))
+                    .build();
+                partMap.put(partKeyInfo.getPartNumber(), partKeyInfo);
+              }
+            }
+          }
+          partKeyInfoMapIterator = partMap.values().iterator();
+        }
 
         ReplicationConfig replicationConfig = null;
 

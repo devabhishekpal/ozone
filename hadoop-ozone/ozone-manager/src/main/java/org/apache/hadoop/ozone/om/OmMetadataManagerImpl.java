@@ -1528,7 +1528,22 @@ public class OmMetadataManagerImpl implements OMMetadataManager,
           expiredMPUs.get(mapKey)
               .addMultipartUploads(builder.setName(dbMultipartInfoKey)
                   .build());
-          numParts += omMultipartKeyInfo.getPartKeyInfoMap().size();
+          if (omMultipartKeyInfo.getSchemaVersion() == 0) {
+            numParts += omMultipartKeyInfo.getPartKeyInfoMap().size();
+          } else {
+            String prefix = dbMultipartInfoKey + OM_KEY_PREFIX;
+            try (TableIterator<String, ? extends KeyValue<String, OmMultipartPartInfo>>
+                     partIterator = getMultipartPartTable().iterator(prefix)) {
+              while (partIterator.hasNext()) {
+                KeyValue<String, OmMultipartPartInfo> partEntry =
+                    partIterator.next();
+                if (!partEntry.getKey().startsWith(prefix)) {
+                  break;
+                }
+                numParts++;
+              }
+            }
+          }
         }
 
       }

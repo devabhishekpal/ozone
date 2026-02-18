@@ -22,6 +22,8 @@ import static org.apache.hadoop.ozone.om.lock.OzoneManagerLock.LeveledResource.B
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.util.Map;
+import org.apache.hadoop.hdds.utils.db.Table;
+import org.apache.hadoop.hdds.utils.db.TableIterator;
 import org.apache.hadoop.hdds.utils.db.cache.CacheKey;
 import org.apache.hadoop.hdds.utils.db.cache.CacheValue;
 import org.apache.hadoop.ozone.OzoneConsts;
@@ -34,6 +36,7 @@ import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.QuotaUtil;
 import org.apache.hadoop.ozone.om.request.key.OMKeyRequest;
 import org.apache.hadoop.ozone.om.request.util.OMMultipartUploadUtils;
@@ -172,10 +175,26 @@ public class S3MultipartUploadAbortRequest extends OMKeyRequest {
       // When abort uploaded key, we need to subtract the PartKey length from
       // the volume usedBytes.
       long quotaReleased = 0;
-      for (PartKeyInfo iterPartKeyInfo : multipartKeyInfo.getPartKeyInfoMap()) {
-        quotaReleased += QuotaUtil.getReplicatedSize(
-            iterPartKeyInfo.getPartKeyInfo().getDataSize(),
-            multipartKeyInfo.getReplicationConfig());
+      if (multipartKeyInfo.getSchemaVersion() == 0) {
+        for (PartKeyInfo iterPartKeyInfo : multipartKeyInfo.getPartKeyInfoMap()) {
+          quotaReleased += QuotaUtil.getReplicatedSize(
+              iterPartKeyInfo.getPartKeyInfo().getDataSize(),
+              multipartKeyInfo.getReplicationConfig());
+        }
+      } else {
+        String prefix = multipartKey + OzoneConsts.OM_KEY_PREFIX;
+        try (TableIterator<String, ? extends Table.KeyValue<String, OmMultipartPartInfo>> iterator =
+                 omMetadataManager.getMultipartPartTable().iterator(prefix)) {
+          while (iterator.hasNext()) {
+            Table.KeyValue<String, OmMultipartPartInfo> kv = iterator.next();
+            if (!kv.getKey().startsWith(prefix)) {
+              break;
+            }
+            quotaReleased += QuotaUtil.getReplicatedSize(
+                kv.getValue().getDataSize(),
+                multipartKeyInfo.getReplicationConfig());
+          }
+        }
       }
       omBucketInfo.incrUsedBytes(-quotaReleased);
 

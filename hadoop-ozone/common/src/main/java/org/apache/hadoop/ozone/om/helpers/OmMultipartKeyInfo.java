@@ -129,11 +129,11 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
       return new PartKeyInfoMap(list);
     }
 
-    PartKeyInfoMap(List<PartKeyInfo> sorted) {
+    public PartKeyInfoMap(List<PartKeyInfo> sorted) {
       this.sorted = Collections.unmodifiableList(sorted);
     }
 
-    PartKeyInfoMap(SortedMap<Integer, PartKeyInfo> sorted) {
+    public PartKeyInfoMap(SortedMap<Integer, PartKeyInfo> sorted) {
       this(new ArrayList<>(sorted.values()));
     }
 
@@ -262,6 +262,8 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
         for (PartKeyInfo partKeyInfo : multipartKeyInfo.partKeyInfoMap) {
           this.partKeyInfoList.put(partKeyInfo.getPartNumber(), partKeyInfo);
         }
+      } else  {
+        // TODO: Build parts information from MultipartPartInfo table
       }
 
       this.parentID = multipartKeyInfo.parentID;

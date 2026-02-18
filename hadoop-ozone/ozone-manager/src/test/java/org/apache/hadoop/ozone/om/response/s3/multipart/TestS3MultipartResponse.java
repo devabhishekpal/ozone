@@ -290,7 +290,8 @@ public class TestS3MultipartResponse {
     }
 
     return new S3MultipartUploadCommitPartResponseWithFSO(omResponse,
-        multipartKey, openKey, multipartKeyInfo, keyToDeleteMap,
+        multipartKey, openKey, multipartKeyInfo, null, null, null,
+        keyToDeleteMap,
         openPartKeyInfoToBeDeleted, omBucketInfo, omBucketInfo.getObjectID(),
         getBucketLayout());
   }
@@ -327,7 +328,7 @@ public class TestS3MultipartResponse {
     return new S3MultipartUploadCompleteResponseWithFSO(omResponse,
         multipartKey, multipartOpenKey, omKeyInfo,  allKeyInfoToRemove,
         getBucketLayout(), omBucketInfo, volumeId, bucketId, null,
-        multipartKeyInfo);
+        multipartKeyInfo, Collections.emptyList(), Collections.emptyList());
   }
 
   protected S3InitiateMultipartUploadResponse getS3InitiateMultipartUploadResp(
