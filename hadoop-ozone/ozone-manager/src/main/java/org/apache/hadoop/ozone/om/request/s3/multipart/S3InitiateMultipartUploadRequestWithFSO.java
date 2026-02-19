@@ -46,6 +46,7 @@ import org.apache.hadoop.ozone.om.request.file.OMFileRequest;
 import org.apache.hadoop.ozone.om.request.util.OmResponseUtil;
 import org.apache.hadoop.ozone.om.response.OMClientResponse;
 import org.apache.hadoop.ozone.om.response.s3.multipart.S3InitiateMultipartUploadResponseWithFSO;
+import org.apache.hadoop.ozone.om.upgrade.OMLayoutFeature;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.KeyArgs;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.MultipartInfoInitiateRequest;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.MultipartInfoInitiateResponse;
@@ -168,7 +169,8 @@ public class S3InitiateMultipartUploadRequestWithFSO
           .setObjectID(pathInfoFSO.getLeafNodeObjectId())
           .setUpdateID(transactionLogIndex)
           .setParentID(pathInfoFSO.getLastKnownParentId())
-          .setSchemaVersion((byte) 1)
+          .setSchemaVersion((byte) (ozoneManager.getVersionManager().isAllowed(
+            OMLayoutFeature.MPU_PARTS_TABLE_SPLIT) ? 1 : 0))
           .build();
 
       omKeyInfo = new OmKeyInfo.Builder()

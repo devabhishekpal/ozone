@@ -154,6 +154,13 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
 
       multipartKeyInfo = omMetadataManager.getMultipartInfoTable()
           .get(multipartKey);
+      
+      if (!ozoneManager.getVersionManager().isAllowed(OMLayoutFeature.MPU_PARTS_TABLE_SPLIT)
+          && multipartKeyInfo.getSchemaVersion() != 0) {
+        throw new OMException("MPU parts-table split behavior is not allowed " +
+            "before cluster finalization.",
+            OMException.ResultCodes.NOT_SUPPORTED_OPERATION_PRIOR_FINALIZATION);
+      }
 
       openKey = getOpenKey(volumeName, bucketName, keyName, omMetadataManager,
               clientID);
@@ -289,7 +296,7 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
         correctedSpace -= QuotaUtil.getReplicatedSize(
             oldMultipartPartInfo.getDataSize(),
             multipartKeyInfo.getReplicationConfig());
-        if (oldPartOmKeyInfo != null) {
+        if (null != oldPartOmKeyInfo) {
           RepeatedOmKeyInfo oldVerKeyInfo = getOldVersionsToCleanUp(
               oldPartOmKeyInfo, omBucketInfo.getObjectID(), trxnLogIndex);
           String delKeyName = omMetadataManager.getOzoneDeletePathKey(
@@ -298,7 +305,7 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
             keyVersionsToDeleteMap = new HashMap<>();
             keyVersionsToDeleteMap.put(delKeyName, oldVerKeyInfo);
           }
-          if (oldPartOpenKey != null) {
+          if (null != oldPartOpenKey) {
             omMetadataManager.getOpenKeyTable(getBucketLayout()).addCacheEntry(
                 new CacheKey<>(oldPartOpenKey),
                 CacheValue.get(trxnLogIndex));

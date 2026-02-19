@@ -219,6 +219,7 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
                       omBucketInfo.getDefaultReplicationConfig() :
                       null, ozoneManager);
 
+          // TODO: This is dead code, not referenced anywhere.
           OmMultipartKeyInfo multipartKeyInfoFromArgs =
               new OmMultipartKeyInfo.Builder()
                   .setUploadID(keyArgs.getMultipartUploadID())
@@ -259,6 +260,13 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
 
       OmMultipartKeyInfo multipartKeyInfo = omMetadataManager
           .getMultipartInfoTable().get(multipartKey);
+      
+      if (!ozoneManager.getVersionManager().isAllowed(OMLayoutFeature.MPU_PARTS_TABLE_SPLIT)
+          && multipartKeyInfo.getSchemaVersion() != 0) {
+        throw new OMException("MPU parts-table split behavior is not allowed " +
+            "before cluster finalization.",
+            OMException.ResultCodes.NOT_SUPPORTED_OPERATION_PRIOR_FINALIZATION);
+      }
 
       String ozoneKey = omMetadataManager.getOzoneKey(
           volumeName, bucketName, keyName);
@@ -723,6 +731,19 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
         volume + " bucket: " + bucket + " key: " + keyName;
   }
 
+  /**
+   * Loads part key information from the multipartPartTable.
+   * @param omMetadataManager Instance of OMMetadataManager to fetch the multipartPartTable
+   * @param multipartKey The multipart key to be used to index
+   * @param multipartKeyInfo This is being used to fetch multipart key information like replication configs
+   * @param partMap This is a map of part number : PartKeyInfo, it is being mutated by this method
+   * @param multipartPartInfoMap This is a map of part number : OmMultipartPartInfo, it is being mutated by this method
+   * @param multipartPartKeys This is a list of multipart part keys, it is being mutated by this method - these stores
+   *                          the keys that are to be deleted from the multipartPartTable
+   * @param multipartPartOpenKeys This is a list of multipart part open keys, it is being mutated by this method - these stores
+   *                              the keys that are to be deleted from the openKeyTable
+   * @throws IOException
+   */
   private void loadPartKeyInfoFromMultipartPartTable(
       OMMetadataManager omMetadataManager, String multipartKey,
       OmMultipartKeyInfo multipartKeyInfo, TreeMap<Integer, PartKeyInfo> partMap,

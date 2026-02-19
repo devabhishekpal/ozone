@@ -195,7 +195,8 @@ public class S3InitiateMultipartUploadRequest extends OMKeyRequest {
               replicationConfig)
           .setObjectID(objectID)
           .setUpdateID(transactionLogIndex)
-          .setSchemaVersion((byte) 1)
+          .setSchemaVersion((byte) (ozoneManager.getVersionManager().isAllowed(
+              OMLayoutFeature.MPU_PARTS_TABLE_SPLIT) ? 1 : 0))
           .build();
 
       omKeyInfo = new OmKeyInfo.Builder()
