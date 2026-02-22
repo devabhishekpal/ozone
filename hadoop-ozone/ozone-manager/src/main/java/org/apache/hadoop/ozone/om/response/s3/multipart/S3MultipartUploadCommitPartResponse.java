@@ -37,6 +37,7 @@ import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.response.CleanupTableInfo;
@@ -51,7 +52,7 @@ import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.OMRespo
 public class S3MultipartUploadCommitPartResponse extends OmKeyResponse {
 
   private final String multipartKey;
-  private final String multipartPartKey;
+  private final OmMultipartPartKey multipartPartKey;
   private final String openKey;
   private final OmMultipartKeyInfo omMultipartKeyInfo;
   private final OmMultipartPartInfo omMultipartPartInfo;
@@ -71,7 +72,7 @@ public class S3MultipartUploadCommitPartResponse extends OmKeyResponse {
   public S3MultipartUploadCommitPartResponse(@Nonnull OMResponse omResponse,
       String multipartKey, String openKey,
       @Nullable OmMultipartKeyInfo omMultipartKeyInfo,
-      @Nullable String multipartPartKey,
+      @Nullable OmMultipartPartKey multipartPartKey,
       @Nullable OmMultipartPartInfo omMultipartPartInfo,
       @Nullable String oldOpenKeyToDelete,
       @Nullable Map<String, RepeatedOmKeyInfo> keyToDeleteMap,

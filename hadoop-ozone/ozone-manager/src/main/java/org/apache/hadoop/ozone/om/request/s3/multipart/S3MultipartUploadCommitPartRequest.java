@@ -17,7 +17,6 @@
 
 package org.apache.hadoop.ozone.om.request.s3.multipart;
 
-import static org.apache.commons.lang3.StringUtils.leftPad;
 import static org.apache.hadoop.ozone.om.exceptions.OMException.ResultCodes.KEY_NOT_FOUND;
 import static org.apache.hadoop.ozone.om.lock.OzoneManagerLock.LeveledResource.BUCKET_LOCK;
 
@@ -42,6 +41,7 @@ import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.QuotaUtil;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
@@ -130,7 +130,7 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
     OmMultipartPartInfo oldMultipartPartInfo = null;
     OmKeyInfo oldPartOmKeyInfo = null;
     OmMultipartPartInfo multipartPartInfo = null;
-    String multipartPartKey = null;
+    OmMultipartPartKey multipartPartKey = null;
     String oldPartOpenKey = null;
     String openKey = null;
     OmKeyInfo omKeyInfo = null;
@@ -211,7 +211,7 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
       if (multipartKeyInfo.getSchemaVersion() == 0) {
         oldPartKeyInfo = multipartKeyInfo.getPartKeyInfo(partNumber);
       } else {
-        multipartPartKey = getMultipartPartKey(multipartKey, partNumber);
+        multipartPartKey = getMultipartPartKey(uploadID, partNumber);
         oldMultipartPartInfo = omMetadataManager.getMultipartPartTable()
             .get(multipartPartKey);
         if (oldMultipartPartInfo != null) {
@@ -373,7 +373,7 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
   protected S3MultipartUploadCommitPartResponse getOmClientResponse(
       OzoneManager ozoneManager, Map<String, RepeatedOmKeyInfo> keyToDeleteMap,
       String openKey, OmKeyInfo omKeyInfo, String multipartKey,
-      OmMultipartKeyInfo multipartKeyInfo, String multipartPartKey,
+      OmMultipartKeyInfo multipartKeyInfo, OmMultipartPartKey multipartPartKey,
       OmMultipartPartInfo multipartPartInfo, String oldPartOpenKey,
       OMResponse build,
       OmBucketInfo omBucketInfo, long bucketId) {
@@ -438,16 +438,10 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
   }
 
   /**
-   * Returns the multipart part key for the given multipart key and part number.
-   * It will add padding of 0s to the part number to make sure the part keys are sorted
-   * in the correct order in the database.
-   * @param multipartKey The name of the key (usually /vol/buck/key/uploadId) for which the part is being committed.
-   * @param partNumber The part number of the part being committed.
-   * @return A String representing the multipart part key, which is used to store the part information.
+   * Returns typed multipart part key for an upload and part number.
    */
-  private String getMultipartPartKey(String multipartKey, int partNumber) {
-    return multipartKey + OzoneConsts.OM_KEY_PREFIX +
-      leftPad(String.valueOf(partNumber), 5, '0');
+  private OmMultipartPartKey getMultipartPartKey(String uploadId, int partNumber) {
+    return OmMultipartPartKey.of(uploadId, partNumber);
   }
 
   @RequestFeatureValidator(

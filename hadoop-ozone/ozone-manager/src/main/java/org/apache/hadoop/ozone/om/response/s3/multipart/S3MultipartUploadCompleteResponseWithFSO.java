@@ -34,6 +34,7 @@ import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmDirectoryInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.request.file.OMFileRequest;
 import org.apache.hadoop.ozone.om.response.CleanupTableInfo;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.OMResponse;
@@ -70,7 +71,7 @@ public class S3MultipartUploadCompleteResponseWithFSO
       @Nonnull long volumeId, @Nonnull long bucketId,
       List<OmDirectoryInfo> missingParentInfos,
       OmMultipartKeyInfo multipartKeyInfo,
-      List<String> multipartPartKeysToDelete,
+      List<OmMultipartPartKey> multipartPartKeysToDelete,
       List<String> multipartPartOpenKeysToDelete) {
     super(omResponse, multipartKey, multipartOpenKey, omKeyInfo,
         allKeyInfoToRemove, bucketLayout, omBucketInfo, bucketId,

@@ -57,6 +57,7 @@ import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfoGroup;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.QuotaUtil;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
@@ -288,7 +289,7 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
       if (!partsList.isEmpty()) {
         MultipartPartsData multipartPartsData = getMultipartPartsData(
             omMetadataManager, multipartKey, multipartKeyInfo);
-        final List<String> multipartPartKeysToDelete =
+        final List<OmMultipartPartKey> multipartPartKeysToDelete =
             multipartPartsData.getMultipartPartKeysToDelete();
         final List<String> multipartPartOpenKeysToDelete =
             multipartPartsData.getMultipartPartOpenKeysToDelete();
@@ -441,7 +442,7 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
       OmBucketInfo omBucketInfo,
       long volumeId, long bucketId, List<OmDirectoryInfo> missingParentInfos,
       OmMultipartKeyInfo multipartKeyInfo,
-      List<String> multipartPartKeysToDelete,
+      List<OmMultipartPartKey> multipartPartKeysToDelete,
       List<String> multipartPartOpenKeysToDelete) {
 
     return new S3MultipartUploadCompleteResponse(omResponse.build(),
@@ -734,7 +735,6 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
   /**
    * Loads part key information from the multipartPartTable.
    * @param omMetadataManager Instance of OMMetadataManager to fetch the multipartPartTable
-   * @param multipartKey The multipart key to be used to index
    * @param multipartKeyInfo This is being used to fetch multipart key information like replication configs
    * @param partMap This is a map of part number : PartKeyInfo, it is being mutated by this method
    * @param multipartPartInfoMap This is a map of part number : OmMultipartPartInfo, it is being mutated by this method
@@ -745,18 +745,19 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
    * @throws IOException
    */
   private void loadPartKeyInfoFromMultipartPartTable(
-      OMMetadataManager omMetadataManager, String multipartKey,
+      OMMetadataManager omMetadataManager,
       OmMultipartKeyInfo multipartKeyInfo, TreeMap<Integer, PartKeyInfo> partMap,
       Map<Integer, OmMultipartPartInfo> multipartPartInfoMap,
-      List<String> multipartPartKeys,
+      List<OmMultipartPartKey> multipartPartKeys,
       List<String> multipartPartOpenKeys)
       throws IOException {
-    String prefix = multipartKey + OzoneConsts.OM_KEY_PREFIX;
-    try (TableIterator<String, ? extends Table.KeyValue<String, OmMultipartPartInfo>> iterator =
+    OmMultipartPartKey prefix =
+        OmMultipartPartKey.prefix(multipartKeyInfo.getUploadID());
+    try (TableIterator<OmMultipartPartKey, ? extends Table.KeyValue<OmMultipartPartKey, OmMultipartPartInfo>> iterator =
              omMetadataManager.getMultipartPartTable().iterator(prefix)) {
       while (iterator.hasNext()) {
-        Table.KeyValue<String, OmMultipartPartInfo> kv = iterator.next();
-        if (!kv.getKey().startsWith(prefix)) {
+        Table.KeyValue<OmMultipartPartKey, OmMultipartPartInfo> kv = iterator.next();
+        if (!multipartKeyInfo.getUploadID().equals(kv.getKey().getUploadId())) {
           break;
         }
         multipartPartKeys.add(kv.getKey());
@@ -807,9 +808,9 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
     }
     TreeMap<Integer, PartKeyInfo> partMap = new TreeMap<>();
     Map<Integer, OmMultipartPartInfo> multipartPartInfoMap = new HashMap<>();
-    List<String> multipartPartKeysToDelete = new ArrayList<>();
+    List<OmMultipartPartKey> multipartPartKeysToDelete = new ArrayList<>();
     List<String> multipartPartOpenKeysToDelete = new ArrayList<>();
-    loadPartKeyInfoFromMultipartPartTable(omMetadataManager, multipartKey,
+    loadPartKeyInfoFromMultipartPartTable(omMetadataManager,
         multipartKeyInfo, partMap, multipartPartInfoMap,
         multipartPartKeysToDelete, multipartPartOpenKeysToDelete);
     return MultipartPartsData.fromSplitSchema(
@@ -823,7 +824,7 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
     if (multipartPartsData.isLegacySchema()) {
       return;
     }
-    for (String multipartPartKey : multipartPartsData.getMultipartPartKeysToDelete()) {
+    for (OmMultipartPartKey multipartPartKey : multipartPartsData.getMultipartPartKeysToDelete()) {
       omMetadataManager.getMultipartPartTable().addCacheEntry(
           new CacheKey<>(multipartPartKey),
           CacheValue.get(trxnLogIndex));
@@ -963,13 +964,13 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
     private final boolean legacySchema;
     private final OmMultipartKeyInfo.PartKeyInfoMap partKeyInfoMap;
     private final Map<Integer, OmMultipartPartInfo> multipartPartInfoMap;
-    private final List<String> multipartPartKeysToDelete;
+    private final List<OmMultipartPartKey> multipartPartKeysToDelete;
     private final List<String> multipartPartOpenKeysToDelete;
 
     private MultipartPartsData(boolean legacySchema,
         OmMultipartKeyInfo.PartKeyInfoMap partKeyInfoMap,
         Map<Integer, OmMultipartPartInfo> multipartPartInfoMap,
-        List<String> multipartPartKeysToDelete,
+        List<OmMultipartPartKey> multipartPartKeysToDelete,
         List<String> multipartPartOpenKeysToDelete) {
       this.legacySchema = legacySchema;
       this.partKeyInfoMap = partKeyInfoMap;
@@ -987,7 +988,7 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
     private static MultipartPartsData fromSplitSchema(
         OmMultipartKeyInfo.PartKeyInfoMap partKeyInfoMap,
         Map<Integer, OmMultipartPartInfo> multipartPartInfoMap,
-        List<String> multipartPartKeysToDelete,
+        List<OmMultipartPartKey> multipartPartKeysToDelete,
         List<String> multipartPartOpenKeysToDelete) {
       return new MultipartPartsData(false, partKeyInfoMap, multipartPartInfoMap,
           multipartPartKeysToDelete, multipartPartOpenKeysToDelete);
@@ -1005,7 +1006,7 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
       return multipartPartInfoMap;
     }
 
-    private List<String> getMultipartPartKeysToDelete() {
+    private List<OmMultipartPartKey> getMultipartPartKeysToDelete() {
       return multipartPartKeysToDelete;
     }
 

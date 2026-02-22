@@ -141,7 +141,6 @@ import org.apache.hadoop.net.DNSToSwitchMapping;
 import org.apache.hadoop.net.ScriptBasedMapping;
 import org.apache.hadoop.ozone.ClientVersion;
 import org.apache.hadoop.ozone.OmUtils;
-import org.apache.hadoop.ozone.OzoneConsts;
 import org.apache.hadoop.ozone.OzoneAcl;
 import org.apache.hadoop.ozone.common.BlockGroup;
 import org.apache.hadoop.ozone.common.DeletedBlock;
@@ -158,6 +157,7 @@ import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfoGroup;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartUpload;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartUploadList;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartUploadListParts;
@@ -1145,13 +1145,13 @@ public class KeyManagerImpl implements KeyManager {
         if (multipartKeyInfo.getSchemaVersion() == 0) {
           partKeyInfoMapIterator = multipartKeyInfo.getPartKeyInfoMap().iterator();
         } else {
-          String prefix = multipartKey + OzoneConsts.OM_KEY_PREFIX;
+          OmMultipartPartKey prefix = OmMultipartPartKey.prefix(uploadID);
           TreeMap<Integer, PartKeyInfo> partMap = new TreeMap<>();
-          try (TableIterator<String, ? extends KeyValue<String, OmMultipartPartInfo>> iterator =
+          try (TableIterator<OmMultipartPartKey, ? extends KeyValue<OmMultipartPartKey, OmMultipartPartInfo>> iterator =
                    metadataManager.getMultipartPartTable().iterator(prefix)) {
             while (iterator.hasNext()) {
-              KeyValue<String, OmMultipartPartInfo> kv = iterator.next();
-              if (!kv.getKey().startsWith(prefix)) {
+              KeyValue<OmMultipartPartKey, OmMultipartPartInfo> kv = iterator.next();
+              if (!uploadID.equals(kv.getKey().getUploadId())) {
                 break;
               }
               OmMultipartPartInfo partInfo = kv.getValue();

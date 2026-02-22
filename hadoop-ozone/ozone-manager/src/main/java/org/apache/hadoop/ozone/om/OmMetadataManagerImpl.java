@@ -108,6 +108,7 @@ import org.apache.hadoop.ozone.om.helpers.OmDirectoryInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfoGroup;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartUpload;
 import org.apache.hadoop.ozone.om.helpers.OmPrefixInfo;
@@ -161,7 +162,7 @@ public class OmMetadataManagerImpl implements OMMetadataManager,
 
   private Table<String, OmKeyInfo> openKeyTable;
   private Table<String, OmMultipartKeyInfo> multipartInfoTable;
-  private Table<String, OmMultipartPartInfo> multipartPartTable;
+  private Table<OmMultipartPartKey, OmMultipartPartInfo> multipartPartTable;
   private Table<String, RepeatedOmKeyInfo> deletedTable;
 
   private Table<String, OmDirectoryInfo> dirTable;
@@ -389,7 +390,7 @@ public class OmMetadataManagerImpl implements OMMetadataManager,
   }
 
   @Override
-  public Table<String, OmMultipartPartInfo> getMultipartPartTable() {
+  public Table<OmMultipartPartKey, OmMultipartPartInfo> getMultipartPartTable() {
     return multipartPartTable;
   }
 
@@ -1531,13 +1532,15 @@ public class OmMetadataManagerImpl implements OMMetadataManager,
           if (omMultipartKeyInfo.getSchemaVersion() == 0) {
             numParts += omMultipartKeyInfo.getPartKeyInfoMap().size();
           } else {
-            String prefix = dbMultipartInfoKey + OM_KEY_PREFIX;
-            try (TableIterator<String, ? extends KeyValue<String, OmMultipartPartInfo>>
+            OmMultipartPartKey prefix =
+                OmMultipartPartKey.prefix(expiredMultipartUpload.getUploadId());
+            try (TableIterator<OmMultipartPartKey, ? extends KeyValue<OmMultipartPartKey, OmMultipartPartInfo>>
                      partIterator = getMultipartPartTable().iterator(prefix)) {
               while (partIterator.hasNext()) {
-                KeyValue<String, OmMultipartPartInfo> partEntry =
+                KeyValue<OmMultipartPartKey, OmMultipartPartInfo> partEntry =
                     partIterator.next();
-                if (!partEntry.getKey().startsWith(prefix)) {
+                if (!expiredMultipartUpload.getUploadId().equals(
+                    partEntry.getKey().getUploadId())) {
                   break;
                 }
                 numParts++;

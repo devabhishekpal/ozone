@@ -35,6 +35,7 @@ import org.apache.hadoop.ozone.om.helpers.OmDBUserPrincipalInfo;
 import org.apache.hadoop.ozone.om.helpers.OmDirectoryInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.OmPrefixInfo;
 import org.apache.hadoop.ozone.om.helpers.OmVolumeArgs;
@@ -231,10 +232,10 @@ public final class OMDBDefinition extends DBDefinition.WithMap {
           OmMultipartKeyInfo.getCodec());
   
    public static final String MULTIPART_PARTS_TABLE = "multipartPartsTable";
-   /** multipartPartsTable: /volume/bucket/key/uploadId/partNumber :- PartKeyInfo. */
-   public static final DBColumnFamilyDefinition<String, OmMultipartPartInfo> MULTIPART_PARTS_TABLE_DEF
+   /** multipartPartsTable: /uploadId/partNumber :- PartKeyInfo. */
+   public static final DBColumnFamilyDefinition<OmMultipartPartKey, OmMultipartPartInfo> MULTIPART_PARTS_TABLE_DEF
        = new DBColumnFamilyDefinition<>(MULTIPART_PARTS_TABLE,
-           StringCodec.get(),
+           OmMultipartPartKey.getCodec(),
            OmMultipartPartInfo.getCodec());
 
   //---------------------------------------------------------------------------

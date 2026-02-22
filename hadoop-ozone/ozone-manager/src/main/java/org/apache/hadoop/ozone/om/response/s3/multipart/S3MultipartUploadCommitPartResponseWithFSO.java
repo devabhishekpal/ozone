@@ -30,6 +30,7 @@ import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.response.CleanupTableInfo;
@@ -53,7 +54,7 @@ public class S3MultipartUploadCommitPartResponseWithFSO
   public S3MultipartUploadCommitPartResponseWithFSO(
       @Nonnull OMResponse omResponse, String multipartKey, String openKey,
       @Nullable OmMultipartKeyInfo omMultipartKeyInfo,
-      @Nullable String multipartPartKey,
+      @Nullable OmMultipartPartKey multipartPartKey,
       @Nullable OmMultipartPartInfo omMultipartPartInfo,
       @Nullable String oldOpenKeyToDelete,
       @Nullable Map<String, RepeatedOmKeyInfo> keyToDeleteMap,

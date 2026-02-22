@@ -25,13 +25,13 @@ import org.apache.hadoop.hdds.utils.db.BatchOperation;
 import org.apache.hadoop.hdds.utils.db.Table;
 import org.apache.hadoop.hdds.utils.db.TableIterator;
 import org.apache.hadoop.ozone.OmUtils;
-import org.apache.hadoop.ozone.OzoneConsts;
 import org.apache.hadoop.ozone.om.OMMetadataManager;
 import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartAbortInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.response.key.OmKeyResponse;
@@ -92,12 +92,13 @@ public abstract class AbstractS3MultipartAbortResponse extends OmKeyResponse {
               deleteKey, repeatedOmKeyInfo);
         }
       } else {
-        String prefix = abortInfo.getMultipartKey() + OzoneConsts.OM_KEY_PREFIX;
-        try (TableIterator<String, ? extends Table.KeyValue<String, OmMultipartPartInfo>> iterator =
+        OmMultipartPartKey prefix =
+            OmMultipartPartKey.prefix(omMultipartKeyInfo.getUploadID());
+        try (TableIterator<OmMultipartPartKey, ? extends Table.KeyValue<OmMultipartPartKey, OmMultipartPartInfo>> iterator =
                  omMetadataManager.getMultipartPartTable().iterator(prefix)) {
           while (iterator.hasNext()) {
-            Table.KeyValue<String, OmMultipartPartInfo> kv = iterator.next();
-            if (!kv.getKey().startsWith(prefix)) {
+            Table.KeyValue<OmMultipartPartKey, OmMultipartPartInfo> kv = iterator.next();
+            if (!omMultipartKeyInfo.getUploadID().equals(kv.getKey().getUploadId())) {
               break;
             }
             OmMultipartPartInfo partInfo = kv.getValue();

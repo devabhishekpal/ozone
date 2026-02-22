@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.hadoop.hdds.utils.db.Table;
 import org.apache.hadoop.hdds.utils.db.Table.KeyValue;
 import org.apache.hadoop.hdds.utils.db.TableIterator;
 import org.apache.hadoop.hdds.utils.db.cache.CacheKey;
@@ -40,6 +39,7 @@ import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartAbortInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartUpload;
 import org.apache.hadoop.ozone.om.request.key.OMKeyRequest;
@@ -288,12 +288,13 @@ public class S3ExpiredMultipartUploadsAbortRequest extends OMKeyRequest {
               numParts++;
             }
           } else {
-            String prefix = expiredMPUKeyName + OzoneConsts.OM_KEY_PREFIX;
-            try (TableIterator<String, ? extends KeyValue<String, OmMultipartPartInfo>> iterator =
+            OmMultipartPartKey prefix =
+                OmMultipartPartKey.prefix(omMultipartKeyInfo.getUploadID());
+            try (TableIterator<OmMultipartPartKey, ? extends KeyValue<OmMultipartPartKey, OmMultipartPartInfo>> iterator =
                      omMetadataManager.getMultipartPartTable().iterator(prefix)) {
               while (iterator.hasNext()) {
-                KeyValue<String, OmMultipartPartInfo> kv = iterator.next();
-                if (!kv.getKey().startsWith(prefix)) {
+                KeyValue<OmMultipartPartKey, OmMultipartPartInfo> kv = iterator.next();
+                if (!omMultipartKeyInfo.getUploadID().equals(kv.getKey().getUploadId())) {
                   break;
                 }
                 quotaReleased += kv.getValue().getDataSize() * keyFactor;

@@ -33,6 +33,7 @@ import org.apache.hadoop.ozone.om.OMMetadataManager;
 import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.response.CleanupTableInfo;
 import org.apache.hadoop.ozone.om.response.key.OmKeyResponse;
@@ -53,7 +54,7 @@ public class S3MultipartUploadCompleteResponse extends OmKeyResponse {
   private String multipartOpenKey;
   private OmKeyInfo omKeyInfo;
   private List<OmKeyInfo> allKeyInfoToRemove;
-  private List<String> multipartPartKeysToDelete;
+  private List<OmMultipartPartKey> multipartPartKeysToDelete;
   private List<String> multipartPartOpenKeysToDelete;
   private OmBucketInfo omBucketInfo;
   private long bucketId;
@@ -68,7 +69,7 @@ public class S3MultipartUploadCompleteResponse extends OmKeyResponse {
       @Nonnull BucketLayout bucketLayout,
       OmBucketInfo omBucketInfo,
       long bucketId,
-      List<String> multipartPartKeysToDelete,
+      List<OmMultipartPartKey> multipartPartKeysToDelete,
       List<String> multipartPartOpenKeysToDelete) {
     super(omResponse, bucketLayout);
     this.allKeyInfoToRemove = allKeyInfoToRemove;
@@ -101,7 +102,7 @@ public class S3MultipartUploadCompleteResponse extends OmKeyResponse {
     omMetadataManager.getMultipartInfoTable().deleteWithBatch(batchOperation,
         multipartKey);
     if (multipartPartKeysToDelete != null) {
-      for (String multipartPartKey : multipartPartKeysToDelete) {
+      for (OmMultipartPartKey multipartPartKey : multipartPartKeysToDelete) {
         omMetadataManager.getMultipartPartTable().deleteWithBatch(batchOperation,
             multipartPartKey);
       }
