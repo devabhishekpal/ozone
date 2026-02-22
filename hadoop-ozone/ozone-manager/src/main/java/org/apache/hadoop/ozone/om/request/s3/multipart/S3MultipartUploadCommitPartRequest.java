@@ -17,6 +17,7 @@
 
 package org.apache.hadoop.ozone.om.request.s3.multipart;
 
+import static org.apache.commons.lang3.StringUtils.leftPad;
 import static org.apache.hadoop.ozone.om.exceptions.OMException.ResultCodes.KEY_NOT_FOUND;
 import static org.apache.hadoop.ozone.om.lock.OzoneManagerLock.LeveledResource.BUCKET_LOCK;
 
@@ -436,8 +437,17 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
         keyName, uploadID);
   }
 
+  /**
+   * Returns the multipart part key for the given multipart key and part number.
+   * It will add padding of 0s to the part number to make sure the part keys are sorted
+   * in the correct order in the database.
+   * @param multipartKey The name of the key (usually /vol/buck/key/uploadId) for which the part is being committed.
+   * @param partNumber The part number of the part being committed.
+   * @return A String representing the multipart part key, which is used to store the part information.
+   */
   private String getMultipartPartKey(String multipartKey, int partNumber) {
-    return multipartKey + OzoneConsts.OM_KEY_PREFIX + partNumber;
+    return multipartKey + OzoneConsts.OM_KEY_PREFIX +
+      leftPad(String.valueOf(partNumber), 5, '0');
   }
 
   @RequestFeatureValidator(
