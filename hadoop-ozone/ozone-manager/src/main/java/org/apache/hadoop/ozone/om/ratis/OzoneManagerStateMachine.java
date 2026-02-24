@@ -497,12 +497,20 @@ public class OzoneManagerStateMachine extends BaseStateMachine {
     final int maxUnFlushedTransactionCount = ozoneManager.getConfiguration()
         .getInt(OMConfigKeys.OZONE_OM_UNFLUSHED_TRANSACTION_MAX_COUNT,
             OMConfigKeys.OZONE_OM_UNFLUSHED_TRANSACTION_MAX_COUNT_DEFAULT);
+    final boolean atlasEnabled = ozoneManager.getConfiguration()
+        .getBoolean(OMConfigKeys.OZONE_OM_ATLAS_ENABLED,
+            OMConfigKeys.OZONE_OM_ATLAS_ENABLED_DEFAULT);
+    final String atlasClusterName = ozoneManager.getConfiguration()
+        .getTrimmed(OMConfigKeys.OZONE_OM_ATLAS_CLUSTER_NAME,
+            OMConfigKeys.OZONE_OM_ATLAS_CLUSTER_NAME_DEFAULT);
     return OzoneManagerDoubleBuffer.newBuilder()
         .setOmMetadataManager(ozoneManager.getMetadataManager())
         .setUpdateLastAppliedIndex(this::updateLastAppliedTermIndex)
         .setMaxUnFlushedTransactionCount(maxUnFlushedTransactionCount)
         .setThreadPrefix(threadPrefix)
         .setS3SecretManager(ozoneManager.getS3SecretManager())
+        .setAtlasEnabled(atlasEnabled)
+        .setAtlasClusterName(atlasClusterName)
         .enableTracing(isTracingEnabled)
         .build()
         .start();

@@ -486,6 +486,16 @@ public final class OMConfigKeys {
       = 10000;
 
   /**
+   * Atlas integration toggle and naming.
+   */
+  public static final String OZONE_OM_ATLAS_ENABLED =
+      "ozone.om.atlas.enabled";
+  public static final boolean OZONE_OM_ATLAS_ENABLED_DEFAULT = false;
+  public static final String OZONE_OM_ATLAS_CLUSTER_NAME =
+      "ozone.om.atlas.cluster.name";
+  public static final String OZONE_OM_ATLAS_CLUSTER_NAME_DEFAULT = "ozone";
+
+  /**
    * This configuration shall be enabled to utilize the functionality of the
    * fine-grained KEY_PATH_LOCK.
    */

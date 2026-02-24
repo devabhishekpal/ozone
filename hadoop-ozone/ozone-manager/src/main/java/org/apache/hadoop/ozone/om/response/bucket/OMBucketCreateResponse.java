@@ -23,19 +23,28 @@ import static org.apache.hadoop.ozone.om.codec.OMDBDefinition.VOLUME_TABLE;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.apache.hadoop.hdds.utils.db.BatchOperation;
 import org.apache.hadoop.ozone.om.OMMetadataManager;
+import org.apache.hadoop.ozone.om.atlas.OzoneAtlasNotification;
+import org.apache.hadoop.ozone.om.atlas.OzoneAtlasNotification.OzoneAtlasEntity;
+import org.apache.hadoop.ozone.om.atlas.OzoneAtlasNotification.OzoneAtlasObjectId;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmVolumeArgs;
+import org.apache.hadoop.ozone.om.response.AtlasNotifiableResponse;
 import org.apache.hadoop.ozone.om.response.CleanupTableInfo;
 import org.apache.hadoop.ozone.om.response.OMClientResponse;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.OMResponse;
+import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.Status;
 
 /**
  * Response for CreateBucket request.
  */
 @CleanupTableInfo(cleanupTables = {BUCKET_TABLE, VOLUME_TABLE})
-public final class OMBucketCreateResponse extends OMClientResponse {
+public final class OMBucketCreateResponse extends OMClientResponse
+    implements AtlasNotifiableResponse {
 
   private final OmBucketInfo omBucketInfo;
   private final OmVolumeArgs omVolumeArgs;
@@ -85,6 +94,51 @@ public final class OMBucketCreateResponse extends OMClientResponse {
   @Nullable
   public OmBucketInfo getOmBucketInfo() {
     return omBucketInfo;
+  }
+
+  @Override
+  public List<OzoneAtlasNotification> buildAtlasNotifications(
+      String clusterName) {
+    if (getOMResponse().getStatus() != Status.OK || omBucketInfo == null) {
+      return Collections.emptyList();
+    }
+    String volume = omBucketInfo.getVolumeName();
+    String bucket = omBucketInfo.getBucketName();
+    String volumeQN = volume + "@" + clusterName;
+    String bucketQN = bucket + "." + volume + "@" + clusterName;
+
+    OzoneAtlasEntity volumeEntity = OzoneAtlasEntity.builder(
+        "ozone_volume", volumeQN)
+        .attribute("name", volume)
+        .attribute("cluster", clusterName)
+        .build();
+
+    OzoneAtlasEntity.Builder bucketBuilder = OzoneAtlasEntity.builder(
+        "ozone_bucket", bucketQN)
+            .attribute("name", bucket)
+            .attribute("volume", volume)
+            .attribute("cluster", clusterName)
+            .attribute("layout", omBucketInfo.getBucketLayout().name())
+            .attribute("versioningEnabled", omBucketInfo.getIsVersionEnabled())
+            .attribute("quotaBytes", omBucketInfo.getQuotaInBytes())
+            .attribute("quotaNamespace", omBucketInfo.getQuotaInNamespace())
+            .relationship("volumeRef",
+                new OzoneAtlasObjectId("ozone_volume", volumeQN));
+
+    if (omBucketInfo.getSourceVolume() != null
+        && omBucketInfo.getSourceBucket() != null) {
+      String srcQN = omBucketInfo.getSourceBucket() + "."
+          + omBucketInfo.getSourceVolume() + "@" + clusterName;
+      bucketBuilder.relationship("linkedBucket",
+          new OzoneAtlasObjectId("ozone_bucket", srcQN))
+          .attribute("sourceVolume", omBucketInfo.getSourceVolume())
+          .attribute("sourceBucket", omBucketInfo.getSourceBucket());
+    }
+
+    OzoneAtlasEntity bucketEntity = bucketBuilder.build();
+
+    return Collections.singletonList(
+        OzoneAtlasNotification.create(Arrays.asList(volumeEntity, bucketEntity)));
   }
 
 }

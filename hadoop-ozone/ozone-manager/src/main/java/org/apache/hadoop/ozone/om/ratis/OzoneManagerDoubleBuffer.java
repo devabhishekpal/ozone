@@ -44,6 +44,7 @@ import org.apache.hadoop.hdds.utils.db.BatchOperation;
 import org.apache.hadoop.ozone.om.OMMetadataManager;
 import org.apache.hadoop.ozone.om.S3SecretManager;
 import org.apache.hadoop.ozone.om.codec.OMDBDefinition;
+import org.apache.hadoop.ozone.om.atlas.AtlasNotificationPublisher;
 import org.apache.hadoop.ozone.om.response.CleanupTableInfo;
 import org.apache.hadoop.ozone.om.response.OMClientResponse;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos;
@@ -93,6 +94,9 @@ public final class OzoneManagerDoubleBuffer {
 
   private final S3SecretManager s3SecretManager;
 
+  private final AtlasNotificationPublisher atlasNotificationPublisher;
+  private final String atlasClusterName;
+
   private final boolean isTracingEnabled;
 
   private final OzoneManagerDoubleBufferMetrics metrics = OzoneManagerDoubleBufferMetrics.create();
@@ -132,6 +136,8 @@ public final class OzoneManagerDoubleBuffer {
     private FlushNotifier flushNotifier;
     private S3SecretManager s3SecretManager;
     private String threadPrefix = "";
+    private boolean atlasEnabled = false;
+    private String atlasClusterName = "ozone";
 
     private Builder() { }
 
@@ -170,6 +176,18 @@ public final class OzoneManagerDoubleBuffer {
       return this;
     }
 
+    public Builder setAtlasEnabled(boolean atlasEnabled) {
+      this.atlasEnabled = atlasEnabled;
+      return this;
+    }
+
+    public Builder setAtlasClusterName(String atlasClusterName) {
+      if (atlasClusterName != null) {
+        this.atlasClusterName = atlasClusterName;
+      }
+      return this;
+    }
+
     public OzoneManagerDoubleBuffer build() {
       Preconditions.assertTrue(maxUnFlushedTransactionCount > 0L,
           () -> "maxUnFlushedTransactionCount = " + maxUnFlushedTransactionCount);
@@ -196,6 +214,9 @@ public final class OzoneManagerDoubleBuffer {
     this.omMetadataManager = b.omMetadataManager;
     this.s3SecretManager = b.s3SecretManager;
     this.updateLastAppliedIndex = b.updateLastAppliedIndex;
+    this.atlasNotificationPublisher = new AtlasNotificationPublisher(
+        b.atlasEnabled);
+    this.atlasClusterName = b.atlasClusterName;
     this.flushNotifier = b.flushNotifier;
     this.unFlushedTransactions = newSemaphore(b.maxUnFlushedTransactionCount);
 
@@ -381,6 +402,9 @@ public final class OzoneManagerDoubleBuffer {
               .commitBatchOperation(batchOperation));
 
       metrics.updateFlushTime(Time.monotonicNow() - startTime);
+
+      // Publish Atlas notifications only after DB commit succeeds.
+      notifyAtlas(buffer);
     }
 
     final long accumulativeCount = flushedTransactionCount.addAndGet(flushedTransactionsSize);
@@ -419,6 +443,16 @@ public final class OzoneManagerDoubleBuffer {
     }
 
     return lastTraceId;
+  }
+
+  private void notifyAtlas(Queue<Entry> buffer) {
+    if (!atlasNotificationPublisher.isEnabled()) {
+      return;
+    }
+    for (Entry entry : buffer) {
+      atlasNotificationPublisher.publishIfPresent(
+          entry.getResponse(), atlasClusterName);
+    }
   }
 
   /**
