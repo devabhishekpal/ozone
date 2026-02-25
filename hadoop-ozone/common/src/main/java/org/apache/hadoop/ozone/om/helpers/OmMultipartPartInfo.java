@@ -26,9 +26,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
 
   private final String partName;
   private final int partNumber;
-  private final String volumeName;
-  private final String bucketName;
-  private final String keyName;
   private final long dataSize;
   private final long modificationTime;
   private final List<OmKeyLocationInfoGroup> keyLocationInfos;
@@ -45,9 +42,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
     super(b);
     this.partName = b.partName;
     this.partNumber = b.partNumber;
-    this.volumeName = b.volumeName;
-    this.bucketName = b.bucketName;
-    this.keyName = b.keyName;
     this.dataSize = b.dataSize;
     this.modificationTime = b.modificationTime;
     this.keyLocationInfos = Collections.unmodifiableList(b.keyLocationInfos);
@@ -58,9 +52,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
   public static class Builder extends WithMetadata.Builder {
     private String partName;
     private int partNumber;
-    private String volumeName;
-    private String bucketName;
-    private String keyName;
     private long dataSize;
     private long modificationTime;
     private List<OmKeyLocationInfoGroup> keyLocationInfos;
@@ -75,9 +66,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
       super(obj);
       this.partName = obj.partName;
       this.partNumber = obj.partNumber;
-      this.volumeName = obj.volumeName;
-      this.bucketName = obj.bucketName;
-      this.keyName = obj.keyName;
       this.dataSize = obj.dataSize;
       this.modificationTime = obj.modificationTime;
       this.keyLocationInfos = new ArrayList<>(obj.keyLocationInfos);
@@ -92,21 +80,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
 
     public Builder setPartNumber(int partNumber) {
       this.partNumber = partNumber;
-      return this;
-    }
-
-    public Builder setVolumeName(String volumeName) {
-      this.volumeName = volumeName;
-      return this;
-    }
-
-    public Builder setBucketName(String bucketName) {
-      this.bucketName = bucketName;
-      return this;
-    }
-
-    public Builder setKeyName(String keyName) {
-      this.keyName = keyName;
       return this;
     }
 
@@ -163,9 +136,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
     Builder builder = new Builder()
         .setPartName(multipartPartInfo.getPartName())
         .setPartNumber(multipartPartInfo.getPartNumber())
-        .setVolumeName(multipartPartInfo.getVolumeName())
-        .setBucketName(multipartPartInfo.getBucketName())
-        .setKeyName(multipartPartInfo.getKeyName())
         .setDataSize(multipartPartInfo.getDataSize())
         .setModificationTime(multipartPartInfo.getModificationTime())
         .setKeyLocationInfos(getKeyLocationInfosFromProto(multipartPartInfo))
@@ -193,9 +163,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
     MultipartPartInfo.Builder builder = MultipartPartInfo.newBuilder()
         .setPartName(partName)
         .setPartNumber(partNumber)
-        .setVolumeName(volumeName)
-        .setBucketName(bucketName)
-        .setKeyName(keyName)
         .addAllKeyLocationList(getKeyLocationInfosAsProto())
         .setDataSize(dataSize)
         .setModificationTime(modificationTime)
@@ -215,18 +182,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
 
   public int getPartNumber() {
     return partNumber;
-  }
-
-  public String getVolumeName() {
-    return volumeName;
-  }
-
-  public String getBucketName() {
-    return bucketName;
-  }
-
-  public String getKeyName() {
-    return keyName;
   }
 
   public long getDataSize() {
@@ -250,14 +205,11 @@ public final class OmMultipartPartInfo extends WithMetadata{
   }
 
   public static OmMultipartPartInfo from(
-      String volumeName, String bucketName, String keyName, String openKey,
+      String openKey,
       String partName, int partNumber, OmKeyInfo omKeyInfo) {
     Builder builder = new Builder()
         .setPartName(partName)
         .setPartNumber(partNumber)
-        .setVolumeName(volumeName)
-        .setBucketName(bucketName)
-        .setKeyName(keyName)
         .setDataSize(omKeyInfo.getDataSize())
         .setModificationTime(omKeyInfo.getModificationTime())
         .setKeyLocationInfos(omKeyInfo.getKeyLocationVersions())

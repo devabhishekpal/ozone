@@ -116,7 +116,6 @@ public class S3InitiateMultipartUploadRequest extends OMKeyRequest {
 
     KeyArgs keyArgs =
         multipartInfoInitiateRequest.getKeyArgs();
-
     Objects.requireNonNull(keyArgs.getMultipartUploadID(), "multipartUploadID == null");
 
     Map<String, String> auditMap = buildKeyArgsAuditMap(keyArgs);
@@ -190,6 +189,9 @@ public class S3InitiateMultipartUploadRequest extends OMKeyRequest {
 
       multipartKeyInfo = new OmMultipartKeyInfo.Builder()
           .setUploadID(keyArgs.getMultipartUploadID())
+          .setVolumeName(volumeName)
+          .setBucketName(bucketName)
+          .setKeyName(keyName)
           .setCreationTime(keyArgs.getModificationTime())
           .setReplicationConfig(
               replicationConfig)

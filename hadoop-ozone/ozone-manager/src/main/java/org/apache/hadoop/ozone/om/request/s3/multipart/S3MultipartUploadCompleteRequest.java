@@ -152,7 +152,6 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
         getOmRequest().getCompleteMultiPartUploadRequest();
 
     KeyArgs keyArgs = multipartUploadCompleteRequest.getKeyArgs();
-
     List<OzoneManagerProtocolProtos.Part> partsList =
         multipartUploadCompleteRequest.getPartsListList();
     Map<String, String> auditMap = buildKeyArgsAuditMap(keyArgs);
@@ -224,6 +223,9 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
           OmMultipartKeyInfo multipartKeyInfoFromArgs =
               new OmMultipartKeyInfo.Builder()
                   .setUploadID(keyArgs.getMultipartUploadID())
+                  .setVolumeName(volumeName)
+                  .setBucketName(bucketName)
+                  .setKeyName(keyName)
                   .setCreationTime(keyArgs.getModificationTime())
                   .setReplicationConfig(replicationConfig)
                   .setObjectID(pathInfoFSO.getLeafNodeObjectId())
@@ -769,9 +771,9 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
         }
         OzoneManagerProtocolProtos.KeyInfo.Builder keyInfoBuilder =
             OzoneManagerProtocolProtos.KeyInfo.newBuilder()
-                .setVolumeName(partInfo.getVolumeName())
-                .setBucketName(partInfo.getBucketName())
-                .setKeyName(partInfo.getKeyName())
+                .setVolumeName(multipartKeyInfo.getVolumeName())
+                .setBucketName(multipartKeyInfo.getBucketName())
+                .setKeyName(multipartKeyInfo.getKeyName())
                 .setDataSize(partInfo.getDataSize())
                 .setCreationTime(partInfo.getModificationTime())
                 .setModificationTime(partInfo.getModificationTime())

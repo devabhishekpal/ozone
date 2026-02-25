@@ -74,7 +74,6 @@ public class S3InitiateMultipartUploadRequestWithFSO
 
     KeyArgs keyArgs =
         multipartInfoInitiateRequest.getKeyArgs();
-
     Objects.requireNonNull(keyArgs.getMultipartUploadID(), "multipartUploadID == null");
 
     Map<String, String> auditMap = buildKeyArgsAuditMap(keyArgs);
@@ -100,7 +99,6 @@ public class S3InitiateMultipartUploadRequestWithFSO
         getOmRequest());
     OMClientResponse omClientResponse = null;
     try {
-
       mergeOmLockDetails(
           omMetadataManager.getLock().acquireWriteLock(BUCKET_LOCK, volumeName,
               bucketName));
@@ -164,6 +162,9 @@ public class S3InitiateMultipartUploadRequestWithFSO
 
       multipartKeyInfo = new OmMultipartKeyInfo.Builder()
           .setUploadID(keyArgs.getMultipartUploadID())
+          .setVolumeName(volumeName)
+          .setBucketName(bucketName)
+          .setKeyName(keyName)
           .setCreationTime(keyArgs.getModificationTime())
           .setReplicationConfig(replicationConfig)
           .setObjectID(pathInfoFSO.getLeafNodeObjectId())

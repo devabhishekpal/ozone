@@ -1717,6 +1717,9 @@ message MultipartKeyInfo {
     optional uint64 parentID = 8;
     optional hadoop.hdds.ECReplicationConfig ecReplicationConfig = 9;
     optional uint32 schemaVersion = 10;
+    required string volumeName = 11;
+    required string bucketName = 12;
+    required string keyName = 13;
 }
 
 message PartKeyInfo {
@@ -1728,9 +1731,6 @@ message PartKeyInfo {
 message MultipartPartInfo {
   required string partName = 1;
   required uint32 partNumber = 2;
-  required string volumeName = 3;
-  required string bucketName = 4;
-  required string keyName = 5;
   repeated KeyLocationList keyLocationList = 6;
   required uint64 dataSize = 7;
   required uint64 modificationTime = 8;

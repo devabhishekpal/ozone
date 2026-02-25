@@ -238,7 +238,7 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
         multipartKeyInfo.addPartKeyInfo(currentPartKeyInfo);
       } else {
         multipartPartInfo = OmMultipartPartInfo.from(
-            volumeName, bucketName, keyName, openKey, partName, partNumber,
+            openKey, partName, partNumber,
             omKeyInfo);
         omMetadataManager.getMultipartPartTable().addCacheEntry(
             new CacheKey<>(multipartPartKey),

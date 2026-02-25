@@ -46,6 +46,9 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
       OmMultipartKeyInfo.class);
 
   private final String uploadID;
+  private final String volumeName;
+  private final String bucketName;
+  private final String keyName;
   private final long creationTime;
   private final ReplicationConfig replicationConfig;
   private PartKeyInfoMap partKeyInfoMap;
@@ -171,6 +174,9 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
   private OmMultipartKeyInfo(Builder b) {
     super(b);
     this.uploadID = b.uploadID;
+    this.volumeName = b.volumeName;
+    this.bucketName = b.bucketName;
+    this.keyName = b.keyName;
     this.creationTime = b.creationTime;
     this.replicationConfig = b.replicationConfig;
     this.partKeyInfoMap = new PartKeyInfoMap(b.partKeyInfoList);
@@ -182,6 +188,9 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
   private OmMultipartKeyInfo(OmMultipartKeyInfo b) {
     super(b);
     this.uploadID = b.uploadID;
+    this.volumeName = b.volumeName;
+    this.bucketName = b.bucketName;
+    this.keyName = b.keyName;
     this.creationTime = b.creationTime;
     this.replicationConfig = b.replicationConfig;
     // PartKeyInfoMap is an immutable data structure. Whenever a PartKeyInfo
@@ -213,6 +222,18 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     return creationTime;
   }
 
+  public String getVolumeName() {
+    return volumeName;
+  }
+
+  public String getBucketName() {
+    return bucketName;
+  }
+
+  public String getKeyName() {
+    return keyName;
+  }
+
   public PartKeyInfoMap getPartKeyInfoMap() {
     return partKeyInfoMap;
   }
@@ -242,6 +263,9 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
    */
   public static class Builder extends WithObjectID.Builder<OmMultipartKeyInfo> {
     private String uploadID;
+    private String volumeName;
+    private String bucketName;
+    private String keyName;
     private long creationTime;
     private ReplicationConfig replicationConfig;
     private final TreeMap<Integer, PartKeyInfo> partKeyInfoList;
@@ -255,6 +279,9 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     public Builder(OmMultipartKeyInfo multipartKeyInfo) {
       super(multipartKeyInfo);
       this.uploadID = multipartKeyInfo.uploadID;
+      this.volumeName = multipartKeyInfo.volumeName;
+      this.bucketName = multipartKeyInfo.bucketName;
+      this.keyName = multipartKeyInfo.keyName;
       this.creationTime = multipartKeyInfo.creationTime;
       this.replicationConfig = multipartKeyInfo.replicationConfig;
       this.partKeyInfoList = new TreeMap<>();
@@ -272,6 +299,21 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
 
     public Builder setUploadID(String uploadId) {
       this.uploadID = uploadId;
+      return this;
+    }
+
+    public Builder setVolumeName(String volName) {
+      this.volumeName = volName;
+      return this;
+    }
+
+    public Builder setBucketName(String buckName) {
+      this.bucketName = buckName;
+      return this;
+    }
+
+    public Builder setKeyName(String keyObjName) {
+      this.keyName = keyObjName;
       return this;
     }
 
@@ -348,6 +390,9 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
 
     return new Builder()
         .setUploadID(multipartKeyInfo.getUploadID())
+        .setVolumeName(multipartKeyInfo.getVolumeName())
+        .setBucketName(multipartKeyInfo.getBucketName())
+        .setKeyName(multipartKeyInfo.getKeyName())
         .setCreationTime(multipartKeyInfo.getCreationTime())
         .setReplicationConfig(replicationConfig)
         .setPartKeyInfoList(list)
@@ -374,6 +419,9 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
   public MultipartKeyInfo getProto() {
     MultipartKeyInfo.Builder builder = MultipartKeyInfo.newBuilder()
         .setUploadID(uploadID)
+        .setVolumeName(volumeName)
+        .setBucketName(bucketName)
+        .setKeyName(keyName)
         .setCreationTime(creationTime)
         .setType(replicationConfig.getReplicationType())
         .setObjectID(getObjectID())
