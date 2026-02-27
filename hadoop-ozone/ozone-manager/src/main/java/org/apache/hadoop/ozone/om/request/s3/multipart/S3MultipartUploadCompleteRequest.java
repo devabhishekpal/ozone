@@ -399,13 +399,12 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
                 .setKey(keyName)
                 .setHash(omKeyInfo.getMetadata().get(OzoneConsts.ETAG)));
 
+        long volumeId = omMetadataManager.getVolumeId(volumeName);
         long bucketId = omMetadataManager.getBucketId(volumeName, bucketName);
-        omClientResponse = getOmClientResponse(
-            omResponse,
-            new CompleteResponseData(
-                multipartKey, dbMultipartOpenKey, omKeyInfo, allKeyInfoToRemove,
-                omBucketInfo, bucketId, multipartPartKeysToDelete,
-                multipartPartOpenKeysToDelete));
+        omClientResponse = getOmClientResponse(multipartKey, omResponse,
+            dbMultipartOpenKey, omKeyInfo, allKeyInfoToRemove, omBucketInfo,
+            volumeId, bucketId, missingParentInfos, multipartKeyInfo,
+            multipartPartKeysToDelete, multipartPartOpenKeysToDelete);
 
         result = Result.SUCCESS;
       } else {
@@ -453,6 +452,21 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
         completeResponseData.getBucketId(),
         completeResponseData.getMultipartPartKeysToDelete(),
         completeResponseData.getMultipartPartOpenKeysToDelete());
+  }
+
+  @SuppressWarnings("checkstyle:ParameterNumber")
+  protected OMClientResponse getOmClientResponse(String multipartKey,
+      OMResponse.Builder omResponse, String dbMultipartOpenKey,
+      OmKeyInfo omKeyInfo, List<OmKeyInfo> allKeyInfoToRemove,
+      OmBucketInfo omBucketInfo, long volumeId, long bucketId,
+      List<OmDirectoryInfo> missingParentInfos,
+      OmMultipartKeyInfo multipartKeyInfo,
+      List<OmMultipartPartKey> multipartPartKeysToDelete,
+      List<String> multipartPartOpenKeysToDelete) {
+    return getOmClientResponse(omResponse,
+        new CompleteResponseData(multipartKey, dbMultipartOpenKey, omKeyInfo,
+            allKeyInfoToRemove, omBucketInfo, bucketId,
+            multipartPartKeysToDelete, multipartPartOpenKeysToDelete));
   }
 
   protected void checkDirectoryAlreadyExists(OzoneManager ozoneManager,
