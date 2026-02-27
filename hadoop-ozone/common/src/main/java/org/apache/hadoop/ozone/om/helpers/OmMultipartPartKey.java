@@ -27,15 +27,15 @@ import org.apache.hadoop.hdds.utils.db.Codec;
  *
  * Key encoding:
  * <pre>
- *   uploadId(utf8) + '\0' + partNumber(int32, big-endian)
+ *   uploadId(utf8) + '/' + partNumber(int32, big-endian)
  * </pre>
  * Prefix encoding for iteration:
  * <pre>
- *   uploadId(utf8) + '\0'
+ *   uploadId(utf8) + '/'
  * </pre>
  */
 public final class OmMultipartPartKey {
-  private static final byte SEPARATOR = 0;
+  private static final byte SEPARATOR = (byte) '/';
   private static final Codec<OmMultipartPartKey> CODEC =
       new OmMultipartPartKeyCodec();
 
@@ -118,27 +118,33 @@ public final class OmMultipartPartKey {
 
     @Override
     public OmMultipartPartKey fromPersistedFormat(byte[] rawData) {
-      int sep = -1;
-      for (int i = 0; i < rawData.length; i++) {
-        if (rawData[i] == SEPARATOR) {
-          sep = i;
-          break;
-        }
+      if (rawData.length == 0) {
+        throw new IllegalArgumentException(
+            "Invalid multipart part key: empty key");
       }
-      if (sep < 0) {
+
+      //   prefix key: uploadId + '/'
+      //   full key:   uploadId + '/' + int32(partNumber)
+      int suffixLength;
+      if (rawData[rawData.length - 1] == SEPARATOR) {
+        suffixLength = 0;
+      } else if (rawData.length > Integer.BYTES
+          && rawData[rawData.length - Integer.BYTES - 1] == SEPARATOR) {
+        suffixLength = Integer.BYTES;
+      } else {
         throw new IllegalArgumentException(
             "Invalid multipart part key: missing separator");
       }
-      String uploadId = new String(rawData, 0, sep, StandardCharsets.UTF_8);
-      int remaining = rawData.length - (sep + 1);
-      if (remaining == 0) {
-        return prefix(uploadId);
+
+      int separatorIndex = rawData.length - suffixLength - 1;
+      String uploadId = new String(rawData, 0, separatorIndex,
+          StandardCharsets.UTF_8);
+      if (suffixLength == 0) {
+        return new OmMultipartPartKey(uploadId, null);
       }
-      if (remaining != Integer.BYTES) {
-        throw new IllegalArgumentException(
-            "Invalid multipart part key: unexpected suffix length");
-      }
-      int part = ByteBuffer.wrap(rawData, sep + 1, Integer.BYTES).getInt();
+
+      int part = ByteBuffer.wrap(
+          rawData, separatorIndex + 1, Integer.BYTES).getInt();
       return of(uploadId, part);
     }
 

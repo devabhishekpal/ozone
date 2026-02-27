@@ -390,9 +390,12 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
 
     return new Builder()
         .setUploadID(multipartKeyInfo.getUploadID())
-        .setVolumeName(multipartKeyInfo.getVolumeName())
-        .setBucketName(multipartKeyInfo.getBucketName())
-        .setKeyName(multipartKeyInfo.getKeyName())
+        .setVolumeName(multipartKeyInfo.hasVolumeName() ?
+            multipartKeyInfo.getVolumeName() : null)
+        .setBucketName(multipartKeyInfo.hasBucketName() ?
+            multipartKeyInfo.getBucketName() : null)
+        .setKeyName(multipartKeyInfo.hasKeyName() ?
+            multipartKeyInfo.getKeyName() : null)
         .setCreationTime(multipartKeyInfo.getCreationTime())
         .setReplicationConfig(replicationConfig)
         .setPartKeyInfoList(list)
@@ -419,15 +422,21 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
   public MultipartKeyInfo getProto() {
     MultipartKeyInfo.Builder builder = MultipartKeyInfo.newBuilder()
         .setUploadID(uploadID)
-        .setVolumeName(volumeName)
-        .setBucketName(bucketName)
-        .setKeyName(keyName)
         .setCreationTime(creationTime)
         .setType(replicationConfig.getReplicationType())
         .setObjectID(getObjectID())
         .setUpdateID(getUpdateID())
         .setParentID(parentID)
         .setSchemaVersion(schemaVersion);
+    if (volumeName != null) {
+      builder.setVolumeName(volumeName);
+    }
+    if (bucketName != null) {
+      builder.setBucketName(bucketName);
+    }
+    if (keyName != null) {
+      builder.setKeyName(keyName);
+    }
 
     if (replicationConfig instanceof ECReplicationConfig) {
       ECReplicationConfig ecConf = (ECReplicationConfig) replicationConfig;

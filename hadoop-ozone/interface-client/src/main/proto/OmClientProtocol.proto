@@ -1717,9 +1717,9 @@ message MultipartKeyInfo {
     optional uint64 parentID = 8;
     optional hadoop.hdds.ECReplicationConfig ecReplicationConfig = 9;
     optional uint32 schemaVersion = 10;
-    required string volumeName = 11;
-    required string bucketName = 12;
-    required string keyName = 13;
+    optional string volumeName = 11;
+    optional string bucketName = 12;
+    optional string keyName = 13;
 }
 
 message PartKeyInfo {
@@ -1734,9 +1734,11 @@ message MultipartPartInfo {
   repeated KeyLocationList keyLocationList = 6;
   required uint64 dataSize = 7;
   required uint64 modificationTime = 8;
-  repeated hadoop.hdds.KeyValue metadata = 9;
-  optional FileEncryptionInfoProto fileEncryptionInfo = 10;
-  optional FileChecksumProto fileChecksum = 11;
+  required uint64 objectID = 9;
+  required uint64 updateID = 10;
+  repeated hadoop.hdds.KeyValue metadata = 11;
+  optional FileEncryptionInfoProto fileEncryptionInfo = 12;
+  optional FileChecksumProto fileChecksum = 13;
 }
 
 message MultipartCommitUploadPartRequest {

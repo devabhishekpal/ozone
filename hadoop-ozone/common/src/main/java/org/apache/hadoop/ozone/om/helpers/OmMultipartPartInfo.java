@@ -28,6 +28,8 @@ public final class OmMultipartPartInfo extends WithMetadata{
   private final int partNumber;
   private final long dataSize;
   private final long modificationTime;
+  private final long objectID;
+  private final long updateID;
   private final List<OmKeyLocationInfoGroup> keyLocationInfos;
   private final FileEncryptionInfo encInfo;
   private final FileChecksum fileChecksum;
@@ -44,6 +46,8 @@ public final class OmMultipartPartInfo extends WithMetadata{
     this.partNumber = b.partNumber;
     this.dataSize = b.dataSize;
     this.modificationTime = b.modificationTime;
+    this.objectID = b.objectID;
+    this.updateID = b.updateID;
     this.keyLocationInfos = Collections.unmodifiableList(b.keyLocationInfos);
     this.encInfo = b.encInfo;
     this.fileChecksum = b.fileChecksum;
@@ -54,6 +58,8 @@ public final class OmMultipartPartInfo extends WithMetadata{
     private int partNumber;
     private long dataSize;
     private long modificationTime;
+    private long objectID;
+    private long updateID;
     private List<OmKeyLocationInfoGroup> keyLocationInfos;
     private FileEncryptionInfo encInfo;
     private FileChecksum fileChecksum;
@@ -68,6 +74,8 @@ public final class OmMultipartPartInfo extends WithMetadata{
       this.partNumber = obj.partNumber;
       this.dataSize = obj.dataSize;
       this.modificationTime = obj.modificationTime;
+      this.objectID = obj.objectID;
+      this.updateID = obj.updateID;
       this.keyLocationInfos = new ArrayList<>(obj.keyLocationInfos);
       this.encInfo = obj.encInfo;
       this.fileChecksum = obj.fileChecksum;
@@ -90,6 +98,16 @@ public final class OmMultipartPartInfo extends WithMetadata{
 
     public Builder setModificationTime(long modificationTime) {
       this.modificationTime = modificationTime;
+      return this;
+    }
+
+    public Builder setObjectID(long objectID) {
+      this.objectID = objectID;
+      return this;
+    }
+
+    public Builder setUpdateID(long updateID) {
+      this.updateID = updateID;
       return this;
     }
 
@@ -138,6 +156,8 @@ public final class OmMultipartPartInfo extends WithMetadata{
         .setPartNumber(multipartPartInfo.getPartNumber())
         .setDataSize(multipartPartInfo.getDataSize())
         .setModificationTime(multipartPartInfo.getModificationTime())
+        .setObjectID(multipartPartInfo.getObjectID())
+        .setUpdateID(multipartPartInfo.getUpdateID())
         .setKeyLocationInfos(getKeyLocationInfosFromProto(multipartPartInfo))
         .setEncInfo(null);
 
@@ -166,6 +186,8 @@ public final class OmMultipartPartInfo extends WithMetadata{
         .addAllKeyLocationList(getKeyLocationInfosAsProto())
         .setDataSize(dataSize)
         .setModificationTime(modificationTime)
+        .setObjectID(objectID)
+        .setUpdateID(updateID)
         .addAllMetadata(KeyValueUtil.toProtobuf(getMetadata()));
     if (encInfo != null) {
       builder.setFileEncryptionInfo(OMPBHelper.convert(encInfo));
@@ -192,6 +214,14 @@ public final class OmMultipartPartInfo extends WithMetadata{
     return modificationTime;
   }
 
+  public long getObjectID() {
+    return objectID;
+  }
+
+  public long getUpdateID() {
+    return updateID;
+  }
+
   public List<OmKeyLocationInfoGroup> getKeyLocationInfos() {
     return keyLocationInfos;
   }
@@ -212,7 +242,11 @@ public final class OmMultipartPartInfo extends WithMetadata{
         .setPartNumber(partNumber)
         .setDataSize(omKeyInfo.getDataSize())
         .setModificationTime(omKeyInfo.getModificationTime())
+        .setObjectID(omKeyInfo.getObjectID())
+        .setUpdateID(omKeyInfo.getUpdateID())
         .setKeyLocationInfos(omKeyInfo.getKeyLocationVersions())
+        .setEncInfo(omKeyInfo.getFileEncryptionInfo())
+        .setFileChecksum(omKeyInfo.getFileChecksum())
         .addMetadata(OPEN_KEY_METADATA_KEY, openKey)
         .addAllMetadata(omKeyInfo.getMetadata());
     return builder.build();

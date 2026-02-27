@@ -18,6 +18,7 @@
 package org.apache.hadoop.ozone.om.request.s3.multipart;
 
 import static org.apache.hadoop.ozone.om.exceptions.OMException.ResultCodes.KEY_NOT_FOUND;
+import static org.apache.hadoop.ozone.om.exceptions.OMException.ResultCodes.INVALID_PART_INTEGRITY;
 import static org.apache.hadoop.ozone.om.lock.OzoneManagerLock.LeveledResource.BUCKET_LOCK;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -176,11 +177,16 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
             openKey + "entry is not found in the openKey table",
             KEY_NOT_FOUND);
       }
+      Map<String, String> requestMetadata = KeyValueUtil.getFromProtobuf(
+          keyArgs.getMetadataList());
+      // Validate the integrity metadata of the part i.e. check that the checksum/eTag matches
+      // else fail early and reject the part.
+      validatePartIntegrityMetadata(omKeyInfo, requestMetadata,
+          keyArgs.getMultipartNumber());
       // Add/Update user defined metadata.
       // Set the UpdateID to current transactionLogIndex
       omKeyInfo = omKeyInfo.toBuilder()
-          .addAllMetadata(KeyValueUtil.getFromProtobuf(
-              keyArgs.getMetadataList()))
+          .addAllMetadata(requestMetadata)
           .setUpdateID(trxnLogIndex)
           .build();
 
@@ -442,6 +448,47 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
    */
   private OmMultipartPartKey getMultipartPartKey(String uploadId, int partNumber) {
     return OmMultipartPartKey.of(uploadId, partNumber);
+  }
+
+  /**
+   * Validates integrity metadata (etag/checksum) against persisted metadata
+   * when both are present.
+   */
+  private void validatePartIntegrityMetadata(OmKeyInfo omKeyInfo,
+      Map<String, String> requestMetadata, int partNumber) throws OMException {
+    for (Map.Entry<String, String> metadataEntry : requestMetadata.entrySet()) {
+      String key = metadataEntry.getKey();
+      if (!isIntegrityMetadataKey(key)) {
+        continue;
+      }
+      String requestValue = metadataEntry.getValue();
+      String persistedValue = getMetadataValue(omKeyInfo.getMetadata(), key);
+      if (requestValue != null && persistedValue != null
+          && !requestValue.equals(persistedValue)) {
+        throw new OMException("Checksum/etag mismatch for multipart part "
+            + partNumber + " and metadata key " + key + ".",
+            INVALID_PART_INTEGRITY);
+      }
+    }
+  }
+
+  private boolean isIntegrityMetadataKey(String key) {
+    return OzoneConsts.ETAG.equals(key)
+        || key.startsWith("x-amz-checksum-")
+        || "Content-MD5".equalsIgnoreCase(key);
+  }
+
+  private String getMetadataValue(Map<String, String> metadata, String key) {
+    String exact = metadata.get(key);
+    if (exact != null) {
+      return exact;
+    }
+    for (Map.Entry<String, String> entry : metadata.entrySet()) {
+      if (entry.getKey().equalsIgnoreCase(key)) {
+        return entry.getValue();
+      }
+    }
+    return null;
   }
 
   @RequestFeatureValidator(
