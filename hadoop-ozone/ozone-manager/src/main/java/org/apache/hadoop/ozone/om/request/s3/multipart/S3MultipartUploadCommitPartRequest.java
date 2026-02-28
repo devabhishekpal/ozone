@@ -179,8 +179,6 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
       }
       Map<String, String> requestMetadata = KeyValueUtil.getFromProtobuf(
           keyArgs.getMetadataList());
-      // Validate the integrity metadata of the part i.e. check that the checksum/eTag matches
-      // else fail early and reject the part.
       validatePartIntegrityMetadata(omKeyInfo, requestMetadata,
           keyArgs.getMultipartNumber());
       // Add/Update user defined metadata.
@@ -244,8 +242,7 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
         multipartKeyInfo.addPartKeyInfo(currentPartKeyInfo);
       } else {
         multipartPartInfo = OmMultipartPartInfo.from(
-            openKey, partName, partNumber,
-            omKeyInfo);
+            openKey, partName, partNumber, omKeyInfo);
         omMetadataManager.getMultipartPartTable().addCacheEntry(
             new CacheKey<>(multipartPartKey),
             CacheValue.get(trxnLogIndex, multipartPartInfo));
@@ -451,8 +448,8 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
   }
 
   /**
-   * Validates integrity metadata (etag/checksum) against persisted metadata
-   * when both are present.
+   * Validate incoming per-part integrity metadata against persisted metadata.
+   * This guards against mismatched checksum/eTag values at commit time.
    */
   private void validatePartIntegrityMetadata(OmKeyInfo omKeyInfo,
       Map<String, String> requestMetadata, int partNumber) throws OMException {
@@ -465,7 +462,7 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
       String persistedValue = getMetadataValue(omKeyInfo.getMetadata(), key);
       if (requestValue != null && persistedValue != null
           && !requestValue.equals(persistedValue)) {
-        throw new OMException("Checksum/etag mismatch for multipart part "
+        throw new OMException("Integrity metadata mismatch for multipart part "
             + partNumber + " and metadata key " + key + ".",
             INVALID_PART_INTEGRITY);
       }
@@ -473,9 +470,9 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
   }
 
   private boolean isIntegrityMetadataKey(String key) {
-    return OzoneConsts.ETAG.equals(key)
-        || key.startsWith("x-amz-checksum-")
-        || "Content-MD5".equalsIgnoreCase(key);
+    return OzoneConsts.ETAG.equalsIgnoreCase(key)
+        || "Content-MD5".equalsIgnoreCase(key)
+        || key.toLowerCase().startsWith("x-amz-checksum-");
   }
 
   private String getMetadataValue(Map<String, String> metadata, String key) {
