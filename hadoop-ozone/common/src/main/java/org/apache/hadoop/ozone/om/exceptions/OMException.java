@@ -214,7 +214,8 @@ public class OMException extends IOException {
     INVALID_PART_ORDER, // When list of parts mentioned to complete MPU are not
     // given in ascending order.
 
-    INVALID_PART_INTEGRITY, // When the integrity metadata of the part is not matching with the persisted metadata.
+    INVALID_PART_INTEGRITY, // When the integrity metadata of the part is not
+    // matching with the persisted metadata.
 
     SCM_GET_PIPELINE_EXCEPTION,
 

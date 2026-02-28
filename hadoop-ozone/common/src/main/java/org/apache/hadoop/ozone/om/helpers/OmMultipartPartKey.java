@@ -125,22 +125,33 @@ public final class OmMultipartPartKey {
 
       //   prefix key: uploadId + '/'
       //   full key:   uploadId + '/' + int32(partNumber)
-      int suffixLength;
-      if (rawData[rawData.length - 1] == SEPARATOR) {
-        suffixLength = 0;
-      } else if (rawData.length > Integer.BYTES
+      int suffixLength = -1;
+      // Check full-key layout first. Otherwise part numbers whose low byte is
+      // '/' (for example 47 -> 0x0000002f) are mis-classified as prefix keys.
+      if (rawData.length > Integer.BYTES
           && rawData[rawData.length - Integer.BYTES - 1] == SEPARATOR) {
         suffixLength = Integer.BYTES;
-      } else {
+      } else if (rawData[rawData.length - 1] == SEPARATOR) {
+        suffixLength = 0;
+      }
+      if (suffixLength < 0) {
         throw new IllegalArgumentException(
             "Invalid multipart part key: missing separator");
       }
 
       int separatorIndex = rawData.length - suffixLength - 1;
+      if (separatorIndex < 0) {
+        throw new IllegalArgumentException(
+            "Invalid multipart part key: invalid separator position");
+      }
       String uploadId = new String(rawData, 0, separatorIndex,
           StandardCharsets.UTF_8);
       if (suffixLength == 0) {
         return new OmMultipartPartKey(uploadId, null);
+      }
+      if (rawData.length - (separatorIndex + 1) != Integer.BYTES) {
+        throw new IllegalArgumentException(
+            "Invalid multipart part key: unexpected part suffix length");
       }
 
       int part = ByteBuffer.wrap(

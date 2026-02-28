@@ -837,6 +837,8 @@ public class ObjectEndpoint extends ObjectOperationHandler {
         throw newError(S3ErrorTable.INVALID_PART, key, ex);
       } else if (ex.getResult() == ResultCodes.INVALID_PART_ORDER) {
         throw newError(S3ErrorTable.INVALID_PART_ORDER, key, ex);
+      } else if (ex.getResult() == ResultCodes.INVALID_PART_INTEGRITY) {
+        throw newError(S3ErrorTable.INVALID_PART_INTEGRITY, key, ex);
       } else if (ex.getResult() == ResultCodes.NO_SUCH_MULTIPART_UPLOAD_ERROR) {
         throw newError(NO_SUCH_UPLOAD, uploadID, ex);
       } else if (ex.getResult() == ResultCodes.ENTITY_TOO_SMALL) {

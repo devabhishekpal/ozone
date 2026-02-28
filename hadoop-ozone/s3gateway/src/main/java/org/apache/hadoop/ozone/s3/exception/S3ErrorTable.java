@@ -101,6 +101,10 @@ public final class S3ErrorTable {
       "parts list must be specified in order by part number.",
       HTTP_BAD_REQUEST);
 
+  public static final OS3Exception INVALID_PART_INTEGRITY = new OS3Exception(
+    "InvalidPartIntegrity", "The integrity metadata of the part " +
+    "is not matching with the persisted metadata.", HTTP_BAD_REQUEST);
+
   public static final OS3Exception ENTITY_TOO_SMALL = new OS3Exception(
       "EntityTooSmall", "Your proposed upload is smaller than the minimum " +
       "allowed object size. Each part must be at least 5 MB in size, except " +

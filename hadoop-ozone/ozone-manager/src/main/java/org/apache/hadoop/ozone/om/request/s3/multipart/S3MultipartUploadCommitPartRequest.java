@@ -462,9 +462,10 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
       String persistedValue = getMetadataValue(omKeyInfo.getMetadata(), key);
       if (requestValue != null && persistedValue != null
           && !requestValue.equals(persistedValue)) {
-        throw new OMException("Integrity metadata mismatch for multipart part "
-            + partNumber + " and metadata key " + key + ".",
-            INVALID_PART_INTEGRITY);
+        throw new OMException(
+          "Integrity metadata mismatch for key " + omKeyInfo.getBucketName() + "/" + omKeyInfo.getKeyName() +
+          " with part " + partNumber + " and metadata key " + key + ".",
+          INVALID_PART_INTEGRITY);
       }
     }
   }
