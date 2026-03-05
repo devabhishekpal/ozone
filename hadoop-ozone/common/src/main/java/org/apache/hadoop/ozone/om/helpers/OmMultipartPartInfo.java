@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileEncryptionInfo;
 import org.apache.hadoop.hdds.utils.db.Codec;
@@ -31,11 +32,15 @@ import org.apache.hadoop.ozone.OzoneConsts;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.KeyLocationList;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.MultipartPartInfo;
 import org.apache.hadoop.ozone.protocolPB.OMPBHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class represents a part of a multipart upload key.
  */
 public final class OmMultipartPartInfo {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(OmMultipartPartInfo.class);
   private static final Codec<OmMultipartPartInfo> CODEC = new DelegatedCodec<>(
       Proto2Codec.get(MultipartPartInfo.getDefaultInstance()),
       OmMultipartPartInfo::getFromProto,
@@ -58,6 +63,18 @@ public final class OmMultipartPartInfo {
   }
 
   private OmMultipartPartInfo(Builder b) {
+    if (StringUtils.isBlank(b.partName)) {
+      throw new IllegalArgumentException("partName is required");
+    }
+    if (b.partNumber <= 0) {
+      throw new IllegalArgumentException("partNumber is required and > 0");
+    }
+    if (StringUtils.isBlank(b.eTag)) {
+      throw new IllegalArgumentException("eTag is required");
+    }
+    if (b.keyLocationInfos == null || b.keyLocationInfos.isEmpty()) {
+      throw new IllegalArgumentException("keyLocationList is required");
+    }
     this.partName = b.partName;
     this.partNumber = b.partNumber;
     this.dataSize = b.dataSize;
@@ -130,7 +147,10 @@ public final class OmMultipartPartInfo {
     }
 
     public Builder setETag(String eTag) {
-      this.eTag = Objects.requireNonNull(eTag, "eTag is required");
+      if (StringUtils.isBlank(eTag)) {
+        throw new IllegalArgumentException("eTag is required");
+      }
+      this.eTag = eTag;
       return this;
     }
 
@@ -157,16 +177,27 @@ public final class OmMultipartPartInfo {
 
   public static OmMultipartPartInfo getFromProto(
       MultipartPartInfo multipartPartInfo) {
+    validateRequiredProtoFields(multipartPartInfo);
     Builder builder = new Builder()
         .setPartName(multipartPartInfo.getPartName())
         .setPartNumber(multipartPartInfo.getPartNumber())
         .setDataSize(multipartPartInfo.getDataSize())
         .setModificationTime(multipartPartInfo.getModificationTime())
-        .setObjectID(multipartPartInfo.getObjectID())
-        .setUpdateID(multipartPartInfo.getUpdateID())
         .setETag(multipartPartInfo.getETag())
         .setKeyLocationInfos(getKeyLocationInfosFromProto(multipartPartInfo))
         .setEncInfo(null);
+
+    if (!multipartPartInfo.hasObjectID()) {
+      LOG.warn("MultipartPartInfo missing objectID for part {}", 
+          multipartPartInfo.getPartNumber());
+    }
+    builder.setObjectID(multipartPartInfo.getObjectID());
+
+    if (!multipartPartInfo.hasUpdateID()) {
+      LOG.warn("MultipartPartInfo missing updateID for part {}",
+          multipartPartInfo.getPartNumber());
+    }
+    builder.setUpdateID(multipartPartInfo.getUpdateID());
 
     if (multipartPartInfo.hasFileEncryptionInfo()) {
       builder.setEncInfo(
@@ -182,10 +213,25 @@ public final class OmMultipartPartInfo {
   }
 
   public MultipartPartInfo getProto() {
+    if (StringUtils.isBlank(partName)) {
+      throw new IllegalArgumentException("partName is required");
+    }
+    if (partNumber <= 0) {
+      throw new IllegalArgumentException("partNumber is required and > 0");
+    }
+    if (dataSize < 0) {
+      throw new IllegalArgumentException("dataSize is required");
+    }
+    if (modificationTime <= 0) {
+      throw new IllegalArgumentException("modificationTime is required");
+    }
+    if (keyLocationInfos == null || keyLocationInfos.isEmpty()) {
+      throw new IllegalArgumentException("keyLocationList is required");
+    }
     MultipartPartInfo.Builder builder = MultipartPartInfo.newBuilder()
         .setPartName(partName)
         .setPartNumber(partNumber)
-        .addAllKeyLocationList(getKeyLocationInfosAsProto())
+        .setKeyLocationList(getKeyLocationInfosAsProto())
         .setDataSize(dataSize)
         .setModificationTime(modificationTime)
         .setObjectID(objectID)
@@ -243,6 +289,12 @@ public final class OmMultipartPartInfo {
 
   public static OmMultipartPartInfo from(
       String partName, int partNumber, OmKeyInfo omKeyInfo) {
+    if (omKeyInfo.getObjectID() == 0L) {
+      LOG.warn("Multipart part {} has unset objectID", partNumber);
+    }
+    if (omKeyInfo.getUpdateID() == 0L) {
+      LOG.warn("Multipart part {} has unset updateID", partNumber);
+    }
     Builder builder = new Builder()
         .setPartName(partName)
         .setPartNumber(partNumber)
@@ -257,22 +309,38 @@ public final class OmMultipartPartInfo {
     return builder.build();
   }
 
-  private List<KeyLocationList> getKeyLocationInfosAsProto() {
-    List<KeyLocationList> keyLocations = new ArrayList<>();
-    for (OmKeyLocationInfoGroup keyLocationInfoGroup : keyLocationInfos) {
-      keyLocations.add(keyLocationInfoGroup.getProtobuf(
-          true, ClientVersion.CURRENT_VERSION));
+  private KeyLocationList getKeyLocationInfosAsProto() {
+    if (keyLocationInfos == null || keyLocationInfos.isEmpty()) {
+      throw new IllegalArgumentException("keyLocationList is required");
     }
-    return keyLocations;
+    return keyLocationInfos.get(0).getProtobuf(true, ClientVersion.CURRENT_VERSION);
   }
 
   private static List<OmKeyLocationInfoGroup> getKeyLocationInfosFromProto(
       MultipartPartInfo multipartPartInfo) {
-    List<OmKeyLocationInfoGroup> keyLocations = new ArrayList<>();
-    for (KeyLocationList keyLocationList
-        : multipartPartInfo.getKeyLocationListList()) {
-      keyLocations.add(OmKeyLocationInfoGroup.getFromProtobuf(keyLocationList));
+    return Collections.singletonList(
+        OmKeyLocationInfoGroup.getFromProtobuf(
+            multipartPartInfo.getKeyLocationList()));
+  }
+
+  private static void validateRequiredProtoFields(MultipartPartInfo partInfo) {
+    if (!partInfo.hasPartName() || StringUtils.isBlank(partInfo.getPartName())) {
+      throw new IllegalArgumentException("MultipartPartInfo missing partName");
     }
-    return keyLocations;
+    if (!partInfo.hasPartNumber()) {
+      throw new IllegalArgumentException("MultipartPartInfo missing partNumber");
+    }
+    if (!partInfo.hasETag() || StringUtils.isBlank(partInfo.getETag())) {
+      throw new IllegalArgumentException("MultipartPartInfo missing eTag");
+    }
+    if (!partInfo.hasKeyLocationList()) {
+      throw new IllegalArgumentException("MultipartPartInfo missing keyLocationList");
+    }
+    if (!partInfo.hasDataSize()) {
+      throw new IllegalArgumentException("MultipartPartInfo missing dataSize");
+    }
+    if (!partInfo.hasModificationTime()) {
+      throw new IllegalArgumentException("MultipartPartInfo missing modificationTime");
+    }
   }
 }
