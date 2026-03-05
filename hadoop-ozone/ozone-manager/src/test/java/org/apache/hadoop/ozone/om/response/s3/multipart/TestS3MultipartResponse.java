@@ -328,7 +328,7 @@ public class TestS3MultipartResponse {
     return new S3MultipartUploadCompleteResponseWithFSO(omResponse,
         multipartKey, multipartOpenKey, omKeyInfo,  allKeyInfoToRemove,
         getBucketLayout(), omBucketInfo, volumeId, bucketId, null,
-        multipartKeyInfo, Collections.emptyList(), Collections.emptyList());
+        multipartKeyInfo, Collections.emptyList());
   }
 
   protected S3InitiateMultipartUploadResponse getS3InitiateMultipartUploadResp(
