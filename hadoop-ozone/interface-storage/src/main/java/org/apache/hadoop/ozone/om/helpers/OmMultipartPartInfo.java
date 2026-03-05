@@ -20,6 +20,7 @@ package org.apache.hadoop.ozone.om.helpers;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileEncryptionInfo;
 import org.apache.hadoop.hdds.utils.db.Codec;
@@ -129,7 +130,7 @@ public final class OmMultipartPartInfo {
     }
 
     public Builder setETag(String eTag) {
-      this.eTag = eTag;
+      this.eTag = Objects.requireNonNull(eTag, "eTag is required");
       return this;
     }
 
@@ -163,7 +164,7 @@ public final class OmMultipartPartInfo {
         .setModificationTime(multipartPartInfo.getModificationTime())
         .setObjectID(multipartPartInfo.getObjectID())
         .setUpdateID(multipartPartInfo.getUpdateID())
-        .setETag(multipartPartInfo.hasETag() ? multipartPartInfo.getETag() : null)
+        .setETag(multipartPartInfo.getETag())
         .setKeyLocationInfos(getKeyLocationInfosFromProto(multipartPartInfo))
         .setEncInfo(null);
 
@@ -188,10 +189,9 @@ public final class OmMultipartPartInfo {
         .setDataSize(dataSize)
         .setModificationTime(modificationTime)
         .setObjectID(objectID)
-        .setUpdateID(updateID);
-    if (eTag != null) {
-      builder.setETag(eTag);
-    }
+        .setUpdateID(updateID)
+        .setETag(Objects.requireNonNull(eTag, "eTag is required"));
+
     if (encInfo != null) {
       builder.setFileEncryptionInfo(OMPBHelper.convert(encInfo));
     }
