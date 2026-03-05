@@ -117,6 +117,7 @@ import org.apache.hadoop.crypto.key.KeyProviderCryptoExtension.EncryptedKeyVersi
 import org.apache.hadoop.fs.FileEncryptionInfo;
 import org.apache.hadoop.hdds.HddsConfigKeys;
 import org.apache.hadoop.hdds.client.BlockID;
+import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.hdds.conf.OzoneConfiguration;
 import org.apache.hadoop.hdds.protocol.DatanodeDetails;
@@ -181,7 +182,9 @@ import org.apache.hadoop.ozone.om.service.OpenKeyCleanupService;
 import org.apache.hadoop.ozone.om.service.SnapshotDeletingService;
 import org.apache.hadoop.ozone.om.snapshot.defrag.SnapshotDefragService;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.ExpiredMultipartUploadsBucket;
+import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.PartKeyInfo;
+import org.apache.hadoop.ozone.protocolPB.OMPBHelper;
 import org.apache.hadoop.ozone.security.acl.IAccessAuthorizer;
 import org.apache.hadoop.ozone.security.acl.OzoneObj;
 import org.apache.hadoop.ozone.security.acl.RequestContext;
@@ -1155,21 +1158,52 @@ public class KeyManagerImpl implements KeyManager {
                 break;
               }
               OmMultipartPartInfo partInfo = kv.getValue();
-              String partOpenKey = partInfo.getOpenKey();
-              if (partOpenKey == null) {
-                continue;
+              OzoneManagerProtocolProtos.KeyInfo.Builder keyInfoBuilder =
+                  OzoneManagerProtocolProtos.KeyInfo.newBuilder()
+                      .setVolumeName(volumeName)
+                      .setBucketName(bucketName)
+                      .setKeyName(keyName)
+                      .setDataSize(partInfo.getDataSize())
+                      .setCreationTime(partInfo.getModificationTime())
+                      .setModificationTime(partInfo.getModificationTime())
+                      .setObjectID(partInfo.getObjectID())
+                      .setUpdateID(partInfo.getUpdateID());
+              if (partInfo.getETag() != null) {
+                keyInfoBuilder.addMetadata(HddsProtos.KeyValue.newBuilder()
+                    .setKey(ETAG)
+                    .setValue(partInfo.getETag())
+                    .build());
               }
-              OmKeyInfo omPartKeyInfo = metadataManager.getOpenKeyTable(bucketLayout)
-                  .get(partOpenKey);
-              if (omPartKeyInfo != null) {
-                PartKeyInfo partKeyInfo = PartKeyInfo.newBuilder()
-                    .setPartName(partInfo.getPartName())
-                    .setPartNumber(partInfo.getPartNumber())
-                    .setPartKeyInfo(omPartKeyInfo.getProtobuf(
-                        ClientVersion.CURRENT_VERSION))
-                    .build();
-                partMap.put(partKeyInfo.getPartNumber(), partKeyInfo);
+              ReplicationConfig multipartReplication =
+                  multipartKeyInfo.getReplicationConfig();
+              keyInfoBuilder.setType(multipartReplication.getReplicationType());
+              if (multipartReplication instanceof ECReplicationConfig) {
+                keyInfoBuilder.setEcReplicationConfig(
+                    ((ECReplicationConfig) multipartReplication).toProto());
+              } else {
+                keyInfoBuilder.setFactor(
+                    ReplicationConfig.getLegacyFactor(multipartReplication));
               }
+              if (partInfo.getEncInfo() != null) {
+                keyInfoBuilder.setFileEncryptionInfo(
+                    OMPBHelper.convert(partInfo.getEncInfo()));
+              }
+              if (partInfo.getFileChecksum() != null) {
+                keyInfoBuilder.setFileChecksum(
+                    OMPBHelper.convert(partInfo.getFileChecksum()));
+              }
+              for (OmKeyLocationInfoGroup keyLocationInfoGroup
+                  : partInfo.getKeyLocationInfos()) {
+                keyInfoBuilder.addKeyLocationList(
+                    keyLocationInfoGroup.getProtobuf(true,
+                        ClientVersion.CURRENT_VERSION));
+              }
+              PartKeyInfo partKeyInfo = PartKeyInfo.newBuilder()
+                  .setPartName(partInfo.getPartName())
+                  .setPartNumber(partInfo.getPartNumber())
+                  .setPartKeyInfo(keyInfoBuilder.build())
+                  .build();
+              partMap.put(partKeyInfo.getPartNumber(), partKeyInfo);
             }
           }
           partKeyInfoMapIterator = partMap.values().iterator();

@@ -21,22 +21,30 @@ import jakarta.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import org.apache.hadoop.hdds.client.ECReplicationConfig;
+import org.apache.hadoop.hdds.client.ReplicationConfig;
+import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.utils.db.BatchOperation;
 import org.apache.hadoop.hdds.utils.db.Table;
 import org.apache.hadoop.hdds.utils.db.TableIterator;
+import org.apache.hadoop.ozone.ClientVersion;
 import org.apache.hadoop.ozone.OmUtils;
+import org.apache.hadoop.ozone.OzoneConsts;
 import org.apache.hadoop.ozone.om.OMMetadataManager;
 import org.apache.hadoop.ozone.om.helpers.BucketLayout;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
+import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfoGroup;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartAbortInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.response.key.OmKeyResponse;
+import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.OMResponse;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.PartKeyInfo;
+import org.apache.hadoop.ozone.protocolPB.OMPBHelper;
 
 /**
  * Base class for responses that need to move multipart info part keys to the
@@ -102,26 +110,15 @@ public abstract class AbstractS3MultipartAbortResponse extends OmKeyResponse {
               break;
             }
             OmMultipartPartInfo partInfo = kv.getValue();
-            String partOpenKey = partInfo.getOpenKey();
-            if (partOpenKey != null) {
-              OmKeyInfo currentKeyPartInfo = omMetadataManager
-                  .getOpenKeyTable(abortInfo.getBucketLayout())
-                  .get(partOpenKey);
-              if (currentKeyPartInfo == null) {
-                omMetadataManager.getMultipartPartTable().deleteWithBatch(
-                    batchOperation, kv.getKey());
-                continue;
-              }
-              RepeatedOmKeyInfo repeatedOmKeyInfo = OmUtils.prepareKeyForDelete(
-                  omBucketInfo.getObjectID(), currentKeyPartInfo,
-                  omMultipartKeyInfo.getUpdateID());
-              String deleteKey = omMetadataManager.getOzoneDeletePathKey(
-                  currentKeyPartInfo.getObjectID(), abortInfo.getMultipartKey());
-              omMetadataManager.getDeletedTable().putWithBatch(batchOperation,
-                  deleteKey, repeatedOmKeyInfo);
-              omMetadataManager.getOpenKeyTable(abortInfo.getBucketLayout())
-                  .deleteWithBatch(batchOperation, partOpenKey);
-            }
+            OmKeyInfo currentKeyPartInfo =
+                buildOmKeyInfoFromMultipartPartInfo(omMultipartKeyInfo, partInfo);
+            RepeatedOmKeyInfo repeatedOmKeyInfo = OmUtils.prepareKeyForDelete(
+                omBucketInfo.getObjectID(), currentKeyPartInfo,
+                omMultipartKeyInfo.getUpdateID());
+            String deleteKey = omMetadataManager.getOzoneDeletePathKey(
+                currentKeyPartInfo.getObjectID(), abortInfo.getMultipartKey());
+            omMetadataManager.getDeletedTable().putWithBatch(batchOperation,
+                deleteKey, repeatedOmKeyInfo);
             omMetadataManager.getMultipartPartTable().deleteWithBatch(
                 batchOperation, kv.getKey());
           }
@@ -132,6 +129,48 @@ public abstract class AbstractS3MultipartAbortResponse extends OmKeyResponse {
     omMetadataManager.getBucketTable().putWithBatch(batchOperation,
         omMetadataManager.getBucketKey(omBucketInfo.getVolumeName(),
             omBucketInfo.getBucketName()), omBucketInfo);
+  }
+
+  private OmKeyInfo buildOmKeyInfoFromMultipartPartInfo(
+      OmMultipartKeyInfo multipartKeyInfo, OmMultipartPartInfo partInfo) {
+    OzoneManagerProtocolProtos.KeyInfo.Builder keyInfoBuilder =
+        OzoneManagerProtocolProtos.KeyInfo.newBuilder()
+            .setVolumeName(multipartKeyInfo.getVolumeName())
+            .setBucketName(multipartKeyInfo.getBucketName())
+            .setKeyName(multipartKeyInfo.getKeyName())
+            .setDataSize(partInfo.getDataSize())
+            .setCreationTime(partInfo.getModificationTime())
+            .setModificationTime(partInfo.getModificationTime())
+            .setObjectID(partInfo.getObjectID())
+            .setUpdateID(partInfo.getUpdateID());
+    if (partInfo.getETag() != null) {
+      keyInfoBuilder.addMetadata(HddsProtos.KeyValue.newBuilder()
+          .setKey(OzoneConsts.ETAG)
+          .setValue(partInfo.getETag())
+          .build());
+    }
+    ReplicationConfig replicationConfig = multipartKeyInfo.getReplicationConfig();
+    keyInfoBuilder.setType(replicationConfig.getReplicationType());
+    if (replicationConfig instanceof ECReplicationConfig) {
+      keyInfoBuilder.setEcReplicationConfig(
+          ((ECReplicationConfig) replicationConfig).toProto());
+    } else {
+      keyInfoBuilder.setFactor(
+          ReplicationConfig.getLegacyFactor(replicationConfig));
+    }
+    if (partInfo.getEncInfo() != null) {
+      keyInfoBuilder.setFileEncryptionInfo(
+          OMPBHelper.convert(partInfo.getEncInfo()));
+    }
+    if (partInfo.getFileChecksum() != null) {
+      keyInfoBuilder.setFileChecksum(
+          OMPBHelper.convert(partInfo.getFileChecksum()));
+    }
+    for (OmKeyLocationInfoGroup keyLocationInfoGroup : partInfo.getKeyLocationInfos()) {
+      keyInfoBuilder.addKeyLocationList(
+          keyLocationInfoGroup.getProtobuf(true, ClientVersion.CURRENT_VERSION));
+    }
+    return OmKeyInfo.getFromProtobuf(keyInfoBuilder.build());
   }
 
   /**

@@ -55,7 +55,6 @@ public class S3MultipartUploadCompleteResponse extends OmKeyResponse {
   private OmKeyInfo omKeyInfo;
   private List<OmKeyInfo> allKeyInfoToRemove;
   private List<OmMultipartPartKey> multipartPartKeysToDelete;
-  private List<String> multipartPartOpenKeysToDelete;
   private OmBucketInfo omBucketInfo;
   private long bucketId;
 
@@ -69,8 +68,7 @@ public class S3MultipartUploadCompleteResponse extends OmKeyResponse {
       @Nonnull BucketLayout bucketLayout,
       OmBucketInfo omBucketInfo,
       long bucketId,
-      List<OmMultipartPartKey> multipartPartKeysToDelete,
-      List<String> multipartPartOpenKeysToDelete) {
+      List<OmMultipartPartKey> multipartPartKeysToDelete) {
     super(omResponse, bucketLayout);
     this.allKeyInfoToRemove = allKeyInfoToRemove;
     this.multipartKey = multipartKey;
@@ -79,7 +77,6 @@ public class S3MultipartUploadCompleteResponse extends OmKeyResponse {
     this.omBucketInfo = omBucketInfo;
     this.bucketId = bucketId;
     this.multipartPartKeysToDelete = multipartPartKeysToDelete;
-    this.multipartPartOpenKeysToDelete = multipartPartOpenKeysToDelete;
   }
 
   /**
@@ -105,12 +102,6 @@ public class S3MultipartUploadCompleteResponse extends OmKeyResponse {
       for (OmMultipartPartKey multipartPartKey : multipartPartKeysToDelete) {
         omMetadataManager.getMultipartPartTable().deleteWithBatch(batchOperation,
             multipartPartKey);
-      }
-    }
-    if (multipartPartOpenKeysToDelete != null) {
-      for (String openKeyToDelete : multipartPartOpenKeysToDelete) {
-        omMetadataManager.getOpenKeyTable(getBucketLayout()).deleteWithBatch(
-            batchOperation, openKeyToDelete);
       }
     }
 

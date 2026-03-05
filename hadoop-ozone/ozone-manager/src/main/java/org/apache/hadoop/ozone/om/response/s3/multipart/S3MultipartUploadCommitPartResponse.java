@@ -135,13 +135,9 @@ public class S3MultipartUploadCommitPartResponse extends OmKeyResponse {
           multipartPartKey, omMultipartPartInfo);
     }
 
-    // Legacy schema stores key info in multipartKeyInfo, so open key can be
-    // deleted on commit. Schema v1 keeps each part's committed key in
-    // openKeyTable and tracks it via multipartPartTable metadata.
-    if (omMultipartKeyInfo.getSchemaVersion() == 0) {
-      omMetadataManager.getOpenKeyTable(getBucketLayout())
-          .deleteWithBatch(batchOperation, openKey);
-    }
+    // Delete committed part open key on commit for both schemas.
+    omMetadataManager.getOpenKeyTable(getBucketLayout())
+        .deleteWithBatch(batchOperation, openKey);
     if (oldOpenKeyToDelete != null) {
       omMetadataManager.getOpenKeyTable(getBucketLayout())
           .deleteWithBatch(batchOperation, oldOpenKeyToDelete);

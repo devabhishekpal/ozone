@@ -28,6 +28,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.hadoop.hdds.client.ECReplicationConfig;
+import org.apache.hadoop.hdds.client.ReplicationConfig;
+import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.utils.db.cache.CacheKey;
 import org.apache.hadoop.hdds.utils.db.cache.CacheValue;
 import org.apache.hadoop.ozone.OzoneConsts;
@@ -41,6 +44,7 @@ import org.apache.hadoop.ozone.om.helpers.KeyValueUtil;
 import org.apache.hadoop.ozone.om.helpers.OmBucketInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfo;
+import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfoGroup;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
@@ -61,6 +65,7 @@ import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.Multipa
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.OMRequest;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.OMResponse;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.Type;
+import org.apache.hadoop.ozone.protocolPB.OMPBHelper;
 import org.apache.hadoop.ozone.request.validation.RequestProcessingPhase;
 import org.apache.hadoop.ozone.security.acl.IAccessAuthorizer.ACLType;
 import org.apache.hadoop.util.Time;
@@ -219,11 +224,8 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
         oldMultipartPartInfo = omMetadataManager.getMultipartPartTable()
             .get(multipartPartKey);
         if (oldMultipartPartInfo != null) {
-          oldPartOpenKey = oldMultipartPartInfo.getOpenKey();
-          if (oldPartOpenKey != null) {
-            oldPartOmKeyInfo = omMetadataManager.getOpenKeyTable(getBucketLayout())
-                .get(oldPartOpenKey);
-          }
+          oldPartOmKeyInfo = buildOmKeyInfoFromMultipartPartInfo(
+              multipartKeyInfo, oldMultipartPartInfo);
         }
       }
 
@@ -242,7 +244,7 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
         multipartKeyInfo.addPartKeyInfo(currentPartKeyInfo);
       } else {
         multipartPartInfo = OmMultipartPartInfo.from(
-            openKey, partName, partNumber, omKeyInfo);
+            partName, partNumber, omKeyInfo);
         omMetadataManager.getMultipartPartTable().addCacheEntry(
             new CacheKey<>(multipartPartKey),
             CacheValue.get(trxnLogIndex, multipartPartInfo));
@@ -266,11 +268,9 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
           new CacheKey<>(multipartKey),
           CacheValue.get(trxnLogIndex, multipartKeyInfo));
 
-      if (multipartKeyInfo.getSchemaVersion() == 0) {
-        omMetadataManager.getOpenKeyTable(getBucketLayout()).addCacheEntry(
-            new CacheKey<>(openKey),
-            CacheValue.get(trxnLogIndex));
-      }
+      omMetadataManager.getOpenKeyTable(getBucketLayout()).addCacheEntry(
+          new CacheKey<>(openKey),
+          CacheValue.get(trxnLogIndex));
 
       omBucketInfo = getBucketInfo(omMetadataManager, volumeName, bucketName);
 
@@ -309,11 +309,8 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
             keyVersionsToDeleteMap = new HashMap<>();
             keyVersionsToDeleteMap.put(delKeyName, oldVerKeyInfo);
           }
-          if (null != oldPartOpenKey) {
-            omMetadataManager.getOpenKeyTable(getBucketLayout()).addCacheEntry(
-                new CacheKey<>(oldPartOpenKey),
-                CacheValue.get(trxnLogIndex));
-          }
+          // overwritten part open key was already deleted when that part was committed
+          oldPartOpenKey = null;
         }
       }
       checkBucketQuotaInBytes(omMetadataManager, omBucketInfo,
@@ -445,6 +442,46 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
    */
   private OmMultipartPartKey getMultipartPartKey(String uploadId, int partNumber) {
     return OmMultipartPartKey.of(uploadId, partNumber);
+  }
+
+  private OmKeyInfo buildOmKeyInfoFromMultipartPartInfo(
+      OmMultipartKeyInfo multipartKeyInfo, OmMultipartPartInfo partInfo) {
+    OzoneManagerProtocolProtos.KeyInfo.Builder keyInfoBuilder =
+        OzoneManagerProtocolProtos.KeyInfo.newBuilder()
+            .setVolumeName(multipartKeyInfo.getVolumeName())
+            .setBucketName(multipartKeyInfo.getBucketName())
+            .setKeyName(multipartKeyInfo.getKeyName())
+            .setDataSize(partInfo.getDataSize())
+            .setCreationTime(partInfo.getModificationTime())
+            .setModificationTime(partInfo.getModificationTime())
+            .setObjectID(partInfo.getObjectID())
+            .setUpdateID(partInfo.getUpdateID());
+    if (partInfo.getETag() != null) {
+      keyInfoBuilder.addMetadata(HddsProtos.KeyValue.newBuilder()
+          .setKey(OzoneConsts.ETAG)
+          .setValue(partInfo.getETag())
+          .build());
+    }
+    ReplicationConfig replicationConfig = multipartKeyInfo.getReplicationConfig();
+    keyInfoBuilder.setType(replicationConfig.getReplicationType());
+    if (replicationConfig instanceof ECReplicationConfig) {
+      keyInfoBuilder.setEcReplicationConfig(
+          ((ECReplicationConfig) replicationConfig).toProto());
+    } else {
+      keyInfoBuilder.setFactor(
+          ReplicationConfig.getLegacyFactor(replicationConfig));
+    }
+    if (partInfo.getEncInfo() != null) {
+      keyInfoBuilder.setFileEncryptionInfo(OMPBHelper.convert(partInfo.getEncInfo()));
+    }
+    if (partInfo.getFileChecksum() != null) {
+      keyInfoBuilder.setFileChecksum(OMPBHelper.convert(partInfo.getFileChecksum()));
+    }
+    for (OmKeyLocationInfoGroup keyLocationInfoGroup : partInfo.getKeyLocationInfos()) {
+      keyInfoBuilder.addKeyLocationList(
+          keyLocationInfoGroup.getProtobuf(true, getOmRequest().getVersion()));
+    }
+    return OmKeyInfo.getFromProtobuf(keyInfoBuilder.build());
   }
 
   /**

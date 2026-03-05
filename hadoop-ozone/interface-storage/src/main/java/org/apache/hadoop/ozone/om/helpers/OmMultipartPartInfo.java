@@ -1,23 +1,40 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.hadoop.ozone.om.helpers;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileEncryptionInfo;
 import org.apache.hadoop.hdds.utils.db.Codec;
 import org.apache.hadoop.hdds.utils.db.DelegatedCodec;
 import org.apache.hadoop.hdds.utils.db.Proto2Codec;
 import org.apache.hadoop.ozone.ClientVersion;
+import org.apache.hadoop.ozone.OzoneConsts;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.KeyLocationList;
-import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.MultipartPartInfo;
 import org.apache.hadoop.ozone.protocolPB.OMPBHelper;
+import org.apache.hadoop.ozone.storage.proto.OzoneManagerStorageProtos.MultipartPartInfo;
 
 /**
  * This class represents a part of a multipart upload key.
  */
-public final class OmMultipartPartInfo extends WithMetadata{
+public final class OmMultipartPartInfo {
   private static final Codec<OmMultipartPartInfo> CODEC = new DelegatedCodec<>(
       Proto2Codec.get(MultipartPartInfo.getDefaultInstance()),
       OmMultipartPartInfo::getFromProto,
@@ -31,17 +48,15 @@ public final class OmMultipartPartInfo extends WithMetadata{
   private final long objectID;
   private final long updateID;
   private final List<OmKeyLocationInfoGroup> keyLocationInfos;
+  private final String eTag;
   private final FileEncryptionInfo encInfo;
   private final FileChecksum fileChecksum;
-
-  public static final String OPEN_KEY_METADATA_KEY = "multipart.openKey";
 
   public static Codec<OmMultipartPartInfo> getCodec() {
     return CODEC;
   }
 
   private OmMultipartPartInfo(Builder b) {
-    super(b);
     this.partName = b.partName;
     this.partNumber = b.partNumber;
     this.dataSize = b.dataSize;
@@ -49,11 +64,12 @@ public final class OmMultipartPartInfo extends WithMetadata{
     this.objectID = b.objectID;
     this.updateID = b.updateID;
     this.keyLocationInfos = Collections.unmodifiableList(b.keyLocationInfos);
+    this.eTag = b.eTag;
     this.encInfo = b.encInfo;
     this.fileChecksum = b.fileChecksum;
   }
 
-  public static class Builder extends WithMetadata.Builder {
+  public static class Builder {
     private String partName;
     private int partNumber;
     private long dataSize;
@@ -61,6 +77,7 @@ public final class OmMultipartPartInfo extends WithMetadata{
     private long objectID;
     private long updateID;
     private List<OmKeyLocationInfoGroup> keyLocationInfos;
+    private String eTag;
     private FileEncryptionInfo encInfo;
     private FileChecksum fileChecksum;
 
@@ -69,7 +86,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
     }
 
     public Builder(OmMultipartPartInfo obj) {
-      super(obj);
       this.partName = obj.partName;
       this.partNumber = obj.partNumber;
       this.dataSize = obj.dataSize;
@@ -77,6 +93,7 @@ public final class OmMultipartPartInfo extends WithMetadata{
       this.objectID = obj.objectID;
       this.updateID = obj.updateID;
       this.keyLocationInfos = new ArrayList<>(obj.keyLocationInfos);
+      this.eTag = obj.eTag;
       this.encInfo = obj.encInfo;
       this.fileChecksum = obj.fileChecksum;
     }
@@ -111,7 +128,13 @@ public final class OmMultipartPartInfo extends WithMetadata{
       return this;
     }
 
-    public Builder setKeyLocationInfos(List<OmKeyLocationInfoGroup> keyLocationInfos) {
+    public Builder setETag(String eTag) {
+      this.eTag = eTag;
+      return this;
+    }
+
+    public Builder setKeyLocationInfos(
+        List<OmKeyLocationInfoGroup> keyLocationInfos) {
       this.keyLocationInfos = new ArrayList<>(keyLocationInfos);
       return this;
     }
@@ -123,24 +146,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
 
     public Builder setFileChecksum(FileChecksum fileChecksum) {
       this.fileChecksum = fileChecksum;
-      return this;
-    }
-
-    @Override
-    public Builder setMetadata(Map<String, String> metadata) {
-      super.setMetadata(metadata);
-      return this;
-    }
-
-    @Override
-    public Builder addMetadata(String key, String value) {
-      super.addMetadata(key, value);
-      return this;
-    }
-
-    @Override
-    public Builder addAllMetadata(Map<String, String> additionalMetadata) {
-      super.addAllMetadata(additionalMetadata);
       return this;
     }
 
@@ -158,6 +163,7 @@ public final class OmMultipartPartInfo extends WithMetadata{
         .setModificationTime(multipartPartInfo.getModificationTime())
         .setObjectID(multipartPartInfo.getObjectID())
         .setUpdateID(multipartPartInfo.getUpdateID())
+        .setETag(multipartPartInfo.hasETag() ? multipartPartInfo.getETag() : null)
         .setKeyLocationInfos(getKeyLocationInfosFromProto(multipartPartInfo))
         .setEncInfo(null);
 
@@ -171,11 +177,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
           OMPBHelper.convert(multipartPartInfo.getFileChecksum()));
     }
 
-    if (multipartPartInfo.getMetadataCount() > 0) {
-      builder.addAllMetadata(
-          KeyValueUtil.getFromProtobuf(multipartPartInfo.getMetadataList()));
-    }
-
     return builder.build();
   }
 
@@ -187,8 +188,10 @@ public final class OmMultipartPartInfo extends WithMetadata{
         .setDataSize(dataSize)
         .setModificationTime(modificationTime)
         .setObjectID(objectID)
-        .setUpdateID(updateID)
-        .addAllMetadata(KeyValueUtil.toProtobuf(getMetadata()));
+        .setUpdateID(updateID);
+    if (eTag != null) {
+      builder.setETag(eTag);
+    }
     if (encInfo != null) {
       builder.setFileEncryptionInfo(OMPBHelper.convert(encInfo));
     }
@@ -226,6 +229,10 @@ public final class OmMultipartPartInfo extends WithMetadata{
     return keyLocationInfos;
   }
 
+  public String getETag() {
+    return eTag;
+  }
+
   public FileEncryptionInfo getEncInfo() {
     return encInfo;
   }
@@ -235,7 +242,6 @@ public final class OmMultipartPartInfo extends WithMetadata{
   }
 
   public static OmMultipartPartInfo from(
-      String openKey,
       String partName, int partNumber, OmKeyInfo omKeyInfo) {
     Builder builder = new Builder()
         .setPartName(partName)
@@ -247,13 +253,8 @@ public final class OmMultipartPartInfo extends WithMetadata{
         .setKeyLocationInfos(omKeyInfo.getKeyLocationVersions())
         .setEncInfo(omKeyInfo.getFileEncryptionInfo())
         .setFileChecksum(omKeyInfo.getFileChecksum())
-        .addMetadata(OPEN_KEY_METADATA_KEY, openKey)
-        .addAllMetadata(omKeyInfo.getMetadata());
+        .setETag(omKeyInfo.getMetadata().get(OzoneConsts.ETAG));
     return builder.build();
-  }
-
-  public String getOpenKey() {
-    return getMetadata().get(OPEN_KEY_METADATA_KEY);
   }
 
   private List<KeyLocationList> getKeyLocationInfosAsProto() {

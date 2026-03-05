@@ -38,6 +38,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hdds.client.ECReplicationConfig;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
+import org.apache.hadoop.hdds.protocol.proto.HddsProtos;
 import org.apache.hadoop.hdds.utils.db.Table;
 import org.apache.hadoop.hdds.utils.db.TableIterator;
 import org.apache.hadoop.hdds.utils.db.cache.CacheKey;
@@ -291,8 +292,6 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
             omMetadataManager, multipartKey, multipartKeyInfo);
         final List<OmMultipartPartKey> multipartPartKeysToDelete =
             multipartPartsData.getMultipartPartKeysToDelete();
-        final List<String> multipartPartOpenKeysToDelete =
-            multipartPartsData.getMultipartPartOpenKeysToDelete();
         final Map<Integer, OmMultipartPartInfo> multipartPartInfoMap =
             multipartPartsData.getMultipartPartInfoMap();
         final OmMultipartKeyInfo.PartKeyInfoMap partKeyInfoMap =
@@ -339,14 +338,9 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
         } else {
           for (OmMultipartPartInfo partInfo : multipartPartInfoMap.values()) {
             if (!requestedPartNumbers.contains(partInfo.getPartNumber())) {
-              String partOpenKey = partInfo.getOpenKey();
-              if (partOpenKey != null) {
-                OmKeyInfo delPartKeyInfo = getOmKeyInfoFromOpenKeyTable(
-                    partOpenKey, keyName, omMetadataManager);
-                if (delPartKeyInfo != null) {
-                  allKeyInfoToRemove.add(delPartKeyInfo);
-                }
-              }
+              OmKeyInfo delPartKeyInfo = buildOmKeyInfoFromMultipartPartInfo(
+                  multipartKeyInfo, partInfo);
+              allKeyInfoToRemove.add(delPartKeyInfo);
               usedBytesDiff -= QuotaUtil.getReplicatedSize(
                   partInfo.getDataSize(), multipartKeyInfo.getReplicationConfig());
             }
@@ -399,7 +393,7 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
             getOmClientResponse(multipartKey, omResponse, dbMultipartOpenKey,
                 omKeyInfo, allKeyInfoToRemove, omBucketInfo,
                 volumeId, bucketId, missingParentInfos, multipartKeyInfo,
-                multipartPartKeysToDelete, multipartPartOpenKeysToDelete);
+                multipartPartKeysToDelete);
 
         result = Result.SUCCESS;
       } else {
@@ -442,13 +436,11 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
       OmBucketInfo omBucketInfo,
       long volumeId, long bucketId, List<OmDirectoryInfo> missingParentInfos,
       OmMultipartKeyInfo multipartKeyInfo,
-      List<OmMultipartPartKey> multipartPartKeysToDelete,
-      List<String> multipartPartOpenKeysToDelete) {
+      List<OmMultipartPartKey> multipartPartKeysToDelete) {
 
     return new S3MultipartUploadCompleteResponse(omResponse.build(),
         multipartKey, dbMultipartOpenKey, omKeyInfo, allKeyInfoToRemove,
-        getBucketLayout(), omBucketInfo, bucketId, multipartPartKeysToDelete,
-        multipartPartOpenKeysToDelete);
+        getBucketLayout(), omBucketInfo, bucketId, multipartPartKeysToDelete);
   }
 
   protected void checkDirectoryAlreadyExists(OzoneManager ozoneManager,
@@ -663,7 +655,7 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
         String omPartId = null;
         if (eTagBasedValidationAvailable) {
           requestPartId = part.getETag();
-          omPartId = multipartPartInfo.getMetadata().get(OzoneConsts.ETAG);
+          omPartId = multipartPartInfo.getETag();
         } else {
           requestPartId = part.getPartName();
           omPartId = multipartPartInfo.getPartName();
@@ -748,8 +740,7 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
       OMMetadataManager omMetadataManager,
       OmMultipartKeyInfo multipartKeyInfo, TreeMap<Integer, PartKeyInfo> partMap,
       Map<Integer, OmMultipartPartInfo> multipartPartInfoMap,
-      List<OmMultipartPartKey> multipartPartKeys,
-      List<String> multipartPartOpenKeys)
+      List<OmMultipartPartKey> multipartPartKeys)
       throws IOException {
     OmMultipartPartKey prefix =
         OmMultipartPartKey.prefix(multipartKeyInfo.getUploadID());
@@ -763,10 +754,6 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
         multipartPartKeys.add(kv.getKey());
         OmMultipartPartInfo partInfo = kv.getValue();
         multipartPartInfoMap.put(partInfo.getPartNumber(), partInfo);
-        String partOpenKey = partInfo.getOpenKey();
-        if (partOpenKey != null) {
-          multipartPartOpenKeys.add(partOpenKey);
-        }
         OzoneManagerProtocolProtos.KeyInfo.Builder keyInfoBuilder =
             OzoneManagerProtocolProtos.KeyInfo.newBuilder()
                 .setVolumeName(multipartKeyInfo.getVolumeName())
@@ -775,7 +762,14 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
                 .setDataSize(partInfo.getDataSize())
                 .setCreationTime(partInfo.getModificationTime())
                 .setModificationTime(partInfo.getModificationTime())
-                .addAllMetadata(KeyValueUtil.toProtobuf(partInfo.getMetadata()));
+                .setObjectID(partInfo.getObjectID())
+                .setUpdateID(partInfo.getUpdateID());
+        if (partInfo.getETag() != null) {
+          keyInfoBuilder.addMetadata(HddsProtos.KeyValue.newBuilder()
+              .setKey(OzoneConsts.ETAG)
+              .setValue(partInfo.getETag())
+              .build());
+        }
         ReplicationConfig replicationConfig = multipartKeyInfo.getReplicationConfig();
         keyInfoBuilder.setType(replicationConfig.getReplicationType());
         if (replicationConfig instanceof ECReplicationConfig) {
@@ -789,6 +783,14 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
             : partInfo.getKeyLocationInfos()) {
           keyInfoBuilder.addKeyLocationList(
               keyLocationInfoGroup.getProtobuf(true, getOmRequest().getVersion()));
+        }
+        if (partInfo.getEncInfo() != null) {
+          keyInfoBuilder.setFileEncryptionInfo(
+              OMPBHelper.convert(partInfo.getEncInfo()));
+        }
+        if (partInfo.getFileChecksum() != null) {
+          keyInfoBuilder.setFileChecksum(
+              OMPBHelper.convert(partInfo.getFileChecksum()));
         }
         PartKeyInfo partKeyInfo = PartKeyInfo.newBuilder()
             .setPartName(partInfo.getPartName())
@@ -809,13 +811,12 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
     TreeMap<Integer, PartKeyInfo> partMap = new TreeMap<>();
     Map<Integer, OmMultipartPartInfo> multipartPartInfoMap = new HashMap<>();
     List<OmMultipartPartKey> multipartPartKeysToDelete = new ArrayList<>();
-    List<String> multipartPartOpenKeysToDelete = new ArrayList<>();
     loadPartKeyInfoFromMultipartPartTable(omMetadataManager,
         multipartKeyInfo, partMap, multipartPartInfoMap,
-        multipartPartKeysToDelete, multipartPartOpenKeysToDelete);
+        multipartPartKeysToDelete);
     return MultipartPartsData.fromSplitSchema(
         new OmMultipartKeyInfo.PartKeyInfoMap(partMap), multipartPartInfoMap,
-        multipartPartKeysToDelete, multipartPartOpenKeysToDelete);
+        multipartPartKeysToDelete);
   }
 
   private void addMultipartPartCleanupCacheEntries(
@@ -827,12 +828,6 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
     for (OmMultipartPartKey multipartPartKey : multipartPartsData.getMultipartPartKeysToDelete()) {
       omMetadataManager.getMultipartPartTable().addCacheEntry(
           new CacheKey<>(multipartPartKey),
-          CacheValue.get(trxnLogIndex));
-    }
-    for (String multipartPartOpenKey
-        : multipartPartsData.getMultipartPartOpenKeysToDelete()) {
-      omMetadataManager.getOpenKeyTable(getBucketLayout()).addCacheEntry(
-          new CacheKey<>(multipartPartOpenKey),
           CacheValue.get(trxnLogIndex));
     }
   }
@@ -934,6 +929,48 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
         + partsList.size();
   }
 
+  private OmKeyInfo buildOmKeyInfoFromMultipartPartInfo(
+      OmMultipartKeyInfo multipartKeyInfo, OmMultipartPartInfo partInfo) {
+    OzoneManagerProtocolProtos.KeyInfo.Builder keyInfoBuilder =
+        OzoneManagerProtocolProtos.KeyInfo.newBuilder()
+            .setVolumeName(multipartKeyInfo.getVolumeName())
+            .setBucketName(multipartKeyInfo.getBucketName())
+            .setKeyName(multipartKeyInfo.getKeyName())
+            .setDataSize(partInfo.getDataSize())
+            .setCreationTime(partInfo.getModificationTime())
+            .setModificationTime(partInfo.getModificationTime())
+            .setObjectID(partInfo.getObjectID())
+            .setUpdateID(partInfo.getUpdateID());
+    if (partInfo.getETag() != null) {
+      keyInfoBuilder.addMetadata(HddsProtos.KeyValue.newBuilder()
+          .setKey(OzoneConsts.ETAG)
+          .setValue(partInfo.getETag())
+          .build());
+    }
+    ReplicationConfig replicationConfig = multipartKeyInfo.getReplicationConfig();
+    keyInfoBuilder.setType(replicationConfig.getReplicationType());
+    if (replicationConfig instanceof ECReplicationConfig) {
+      keyInfoBuilder.setEcReplicationConfig(
+          ((ECReplicationConfig) replicationConfig).toProto());
+    } else {
+      keyInfoBuilder.setFactor(
+          ReplicationConfig.getLegacyFactor(replicationConfig));
+    }
+    for (OmKeyLocationInfoGroup keyLocationInfoGroup : partInfo.getKeyLocationInfos()) {
+      keyInfoBuilder.addKeyLocationList(
+          keyLocationInfoGroup.getProtobuf(true, getOmRequest().getVersion()));
+    }
+    if (partInfo.getEncInfo() != null) {
+      keyInfoBuilder.setFileEncryptionInfo(
+          OMPBHelper.convert(partInfo.getEncInfo()));
+    }
+    if (partInfo.getFileChecksum() != null) {
+      keyInfoBuilder.setFileChecksum(
+          OMPBHelper.convert(partInfo.getFileChecksum()));
+    }
+    return OmKeyInfo.getFromProtobuf(keyInfoBuilder.build());
+  }
+
   private static class MultipartCommitRequestPart {
     private String requestPartId;
 
@@ -965,33 +1002,29 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
     private final OmMultipartKeyInfo.PartKeyInfoMap partKeyInfoMap;
     private final Map<Integer, OmMultipartPartInfo> multipartPartInfoMap;
     private final List<OmMultipartPartKey> multipartPartKeysToDelete;
-    private final List<String> multipartPartOpenKeysToDelete;
 
     private MultipartPartsData(boolean legacySchema,
         OmMultipartKeyInfo.PartKeyInfoMap partKeyInfoMap,
         Map<Integer, OmMultipartPartInfo> multipartPartInfoMap,
-        List<OmMultipartPartKey> multipartPartKeysToDelete,
-        List<String> multipartPartOpenKeysToDelete) {
+        List<OmMultipartPartKey> multipartPartKeysToDelete) {
       this.legacySchema = legacySchema;
       this.partKeyInfoMap = partKeyInfoMap;
       this.multipartPartInfoMap = multipartPartInfoMap;
       this.multipartPartKeysToDelete = multipartPartKeysToDelete;
-      this.multipartPartOpenKeysToDelete = multipartPartOpenKeysToDelete;
     }
 
     private static MultipartPartsData fromLegacy(
         OmMultipartKeyInfo.PartKeyInfoMap partKeyInfoMap) {
       return new MultipartPartsData(true, partKeyInfoMap, Collections.emptyMap(),
-          Collections.emptyList(), Collections.emptyList());
+          Collections.emptyList());
     }
 
     private static MultipartPartsData fromSplitSchema(
         OmMultipartKeyInfo.PartKeyInfoMap partKeyInfoMap,
         Map<Integer, OmMultipartPartInfo> multipartPartInfoMap,
-        List<OmMultipartPartKey> multipartPartKeysToDelete,
-        List<String> multipartPartOpenKeysToDelete) {
+        List<OmMultipartPartKey> multipartPartKeysToDelete) {
       return new MultipartPartsData(false, partKeyInfoMap, multipartPartInfoMap,
-          multipartPartKeysToDelete, multipartPartOpenKeysToDelete);
+          multipartPartKeysToDelete);
     }
 
     private boolean isLegacySchema() {
@@ -1008,10 +1041,6 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
 
     private List<OmMultipartPartKey> getMultipartPartKeysToDelete() {
       return multipartPartKeysToDelete;
-    }
-
-    private List<String> getMultipartPartOpenKeysToDelete() {
-      return multipartPartOpenKeysToDelete;
     }
   }
 

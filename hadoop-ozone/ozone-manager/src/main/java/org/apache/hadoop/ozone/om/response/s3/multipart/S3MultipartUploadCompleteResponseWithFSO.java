@@ -71,11 +71,10 @@ public class S3MultipartUploadCompleteResponseWithFSO
       @Nonnull long volumeId, @Nonnull long bucketId,
       List<OmDirectoryInfo> missingParentInfos,
       OmMultipartKeyInfo multipartKeyInfo,
-      List<OmMultipartPartKey> multipartPartKeysToDelete,
-      List<String> multipartPartOpenKeysToDelete) {
+      List<OmMultipartPartKey> multipartPartKeysToDelete) {
     super(omResponse, multipartKey, multipartOpenKey, omKeyInfo,
         allKeyInfoToRemove, bucketLayout, omBucketInfo, bucketId,
-        multipartPartKeysToDelete, multipartPartOpenKeysToDelete);
+        multipartPartKeysToDelete);
     this.volumeId = volumeId;
     this.bucketId = bucketId;
     this.missingParentInfos = missingParentInfos;
