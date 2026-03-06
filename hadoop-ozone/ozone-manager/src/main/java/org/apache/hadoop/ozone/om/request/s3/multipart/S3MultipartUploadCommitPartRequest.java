@@ -48,6 +48,7 @@ import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfoGroup;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
+import org.apache.hadoop.ozone.om.helpers.OzoneAclUtil;
 import org.apache.hadoop.ozone.om.helpers.QuotaUtil;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.request.key.OMKeyRequest;
@@ -456,6 +457,11 @@ public class S3MultipartUploadCommitPartRequest extends OMKeyRequest {
             .setModificationTime(partInfo.getModificationTime())
             .setObjectID(partInfo.getObjectID())
             .setUpdateID(partInfo.getUpdateID());
+    if (multipartKeyInfo.getOwnerName() != null) {
+      keyInfoBuilder.setOwnerName(multipartKeyInfo.getOwnerName());
+    }
+    keyInfoBuilder.addAllAcls(
+        OzoneAclUtil.toProtobuf(multipartKeyInfo.getAcls()));
     if (partInfo.getETag() != null) {
       keyInfoBuilder.addMetadata(HddsProtos.KeyValue.newBuilder()
           .setKey(OzoneConsts.ETAG)

@@ -44,6 +44,7 @@ import org.apache.hadoop.hdds.utils.db.TableIterator;
 import org.apache.hadoop.hdds.utils.db.cache.CacheKey;
 import org.apache.hadoop.hdds.utils.db.cache.CacheValue;
 import org.apache.hadoop.ozone.OzoneConsts;
+import org.apache.hadoop.ozone.OzoneAcl;
 import org.apache.hadoop.ozone.audit.OMAction;
 import org.apache.hadoop.ozone.om.OMMetadataManager;
 import org.apache.hadoop.ozone.om.OzoneConfigUtil;
@@ -60,6 +61,7 @@ import org.apache.hadoop.ozone.om.helpers.OmKeyLocationInfoGroup;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartKeyInfo;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartKey;
 import org.apache.hadoop.ozone.om.helpers.OmMultipartPartInfo;
+import org.apache.hadoop.ozone.om.helpers.OzoneAclUtil;
 import org.apache.hadoop.ozone.om.helpers.QuotaUtil;
 import org.apache.hadoop.ozone.om.helpers.RepeatedOmKeyInfo;
 import org.apache.hadoop.ozone.om.request.file.OMFileRequest;
@@ -222,9 +224,14 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
                       null, ozoneManager);
 
           // TODO: This is dead code, not referenced anywhere.
+          final List<OzoneAcl> keyAcls = getAclsForKey(
+              keyArgs, omBucketInfo, pathInfoFSO, ozoneManager.getPrefixManager(),
+              ozoneManager.getConfig());
           OmMultipartKeyInfo multipartKeyInfoFromArgs =
               new OmMultipartKeyInfo.Builder()
                   .setUploadID(keyArgs.getMultipartUploadID())
+                  .setOwnerName(keyArgs.getOwnerName())
+                  .setAcls(keyAcls)
                   .setCreationTime(keyArgs.getModificationTime())
                   .setReplicationConfig(replicationConfig)
                   .setObjectID(pathInfoFSO.getLeafNodeObjectId())
@@ -241,8 +248,7 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
               .setReplicationConfig(replicationConfig)
               .setOmKeyLocationInfos(Collections.singletonList(
                   new OmKeyLocationInfoGroup(0, new ArrayList<>(), true)))
-              .setAcls(getAclsForKey(keyArgs, omBucketInfo, pathInfoFSO,
-                  ozoneManager.getPrefixManager(), ozoneManager.getConfig()))
+              .setAcls(keyAcls)
               .setObjectID(pathInfoFSO.getLeafNodeObjectId())
               .setUpdateID(trxnLogIndex)
               .setFileEncryptionInfo(keyArgs.hasFileEncryptionInfo() ?
@@ -764,6 +770,11 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
                 .setModificationTime(partInfo.getModificationTime())
                 .setObjectID(partInfo.getObjectID())
                 .setUpdateID(partInfo.getUpdateID());
+        if (multipartKeyInfo.getOwnerName() != null) {
+          keyInfoBuilder.setOwnerName(multipartKeyInfo.getOwnerName());
+        }
+        keyInfoBuilder.addAllAcls(
+            OzoneAclUtil.toProtobuf(multipartKeyInfo.getAcls()));
         if (partInfo.getETag() != null) {
           keyInfoBuilder.addMetadata(HddsProtos.KeyValue.newBuilder()
               .setKey(OzoneConsts.ETAG)
@@ -941,6 +952,11 @@ public class S3MultipartUploadCompleteRequest extends OMKeyRequest {
             .setModificationTime(partInfo.getModificationTime())
             .setObjectID(partInfo.getObjectID())
             .setUpdateID(partInfo.getUpdateID());
+    if (multipartKeyInfo.getOwnerName() != null) {
+      keyInfoBuilder.setOwnerName(multipartKeyInfo.getOwnerName());
+    }
+    keyInfoBuilder.addAllAcls(
+        OzoneAclUtil.toProtobuf(multipartKeyInfo.getAcls()));
     if (partInfo.getETag() != null) {
       keyInfoBuilder.addMetadata(HddsProtos.KeyValue.newBuilder()
           .setKey(OzoneConsts.ETAG)

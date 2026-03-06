@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.hadoop.hdds.client.ReplicationConfig;
 import org.apache.hadoop.ozone.OzoneConsts;
+import org.apache.hadoop.ozone.OzoneAcl;
 import org.apache.hadoop.ozone.om.OMMetadataManager;
 import org.apache.hadoop.ozone.om.OzoneConfigUtil;
 import org.apache.hadoop.ozone.om.OzoneManager;
@@ -159,12 +160,17 @@ public class S3InitiateMultipartUploadRequestWithFSO
               bucketInfo != null ?
                   bucketInfo.getDefaultReplicationConfig() :
                   null, ozoneManager);
+      final List<OzoneAcl> keyAcls = getAclsForKey(
+          keyArgs, bucketInfo, pathInfoFSO, ozoneManager.getPrefixManager(),
+          ozoneManager.getConfig());
 
       multipartKeyInfo = new OmMultipartKeyInfo.Builder()
           .setUploadID(keyArgs.getMultipartUploadID())
           .setVolumeName(volumeName)
           .setBucketName(bucketName)
           .setKeyName(keyName)
+          .setOwnerName(keyArgs.getOwnerName())
+          .setAcls(keyAcls)
           .setCreationTime(keyArgs.getModificationTime())
           .setReplicationConfig(replicationConfig)
           .setObjectID(pathInfoFSO.getLeafNodeObjectId())
@@ -184,8 +190,7 @@ public class S3InitiateMultipartUploadRequestWithFSO
           .setReplicationConfig(replicationConfig)
           .setOmKeyLocationInfos(Collections.singletonList(
               new OmKeyLocationInfoGroup(0, new ArrayList<>(), true)))
-          .setAcls(getAclsForKey(keyArgs, bucketInfo, pathInfoFSO,
-              ozoneManager.getPrefixManager(), ozoneManager.getConfig()))
+          .setAcls(keyAcls)
           .setObjectID(pathInfoFSO.getLeafNodeObjectId())
           .setUpdateID(transactionLogIndex)
           .setFileEncryptionInfo(keyArgs.hasFileEncryptionInfo() ?

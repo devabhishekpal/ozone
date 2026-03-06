@@ -1168,6 +1168,11 @@ public class KeyManagerImpl implements KeyManager {
                       .setModificationTime(partInfo.getModificationTime())
                       .setObjectID(partInfo.getObjectID())
                       .setUpdateID(partInfo.getUpdateID());
+              if (multipartKeyInfo.getOwnerName() != null) {
+                keyInfoBuilder.setOwnerName(multipartKeyInfo.getOwnerName());
+              }
+              keyInfoBuilder.addAllAcls(
+                  OzoneAclUtil.toProtobuf(multipartKeyInfo.getAcls()));
               if (partInfo.getETag() != null) {
                 keyInfoBuilder.addMetadata(HddsProtos.KeyValue.newBuilder()
                     .setKey(ETAG)

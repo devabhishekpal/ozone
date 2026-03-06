@@ -17,6 +17,7 @@
 
 package org.apache.hadoop.ozone.om.helpers;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -31,6 +32,7 @@ import org.apache.hadoop.hdds.utils.db.Codec;
 import org.apache.hadoop.hdds.utils.db.CopyObject;
 import org.apache.hadoop.hdds.utils.db.DelegatedCodec;
 import org.apache.hadoop.hdds.utils.db.Proto2Codec;
+import org.apache.hadoop.ozone.OzoneAcl;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.MultipartKeyInfo;
 import org.apache.hadoop.ozone.protocol.proto.OzoneManagerProtocolProtos.PartKeyInfo;
 
@@ -49,6 +51,11 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
   private final String volumeName;
   private final String bucketName;
   private final String keyName;
+  private final String ownerName;
+  /**
+   * ACL information inherited during MPU initiation.
+   */
+  private final ImmutableList<OzoneAcl> acls;
   private final long creationTime;
   private final ReplicationConfig replicationConfig;
   private PartKeyInfoMap partKeyInfoMap;
@@ -177,6 +184,8 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     this.volumeName = b.volumeName;
     this.bucketName = b.bucketName;
     this.keyName = b.keyName;
+    this.ownerName = b.ownerName;
+    this.acls = b.acls.build();
     this.creationTime = b.creationTime;
     this.replicationConfig = b.replicationConfig;
     this.partKeyInfoMap = new PartKeyInfoMap(b.partKeyInfoList);
@@ -191,6 +200,8 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     this.volumeName = b.volumeName;
     this.bucketName = b.bucketName;
     this.keyName = b.keyName;
+    this.ownerName = b.ownerName;
+    this.acls = b.acls;
     this.creationTime = b.creationTime;
     this.replicationConfig = b.replicationConfig;
     // PartKeyInfoMap is an immutable data structure. Whenever a PartKeyInfo
@@ -234,6 +245,14 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     return keyName;
   }
 
+  public String getOwnerName() {
+    return ownerName;
+  }
+
+  public List<OzoneAcl> getAcls() {
+    return acls;
+  }
+
   public PartKeyInfoMap getPartKeyInfoMap() {
     return partKeyInfoMap;
   }
@@ -266,13 +285,16 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     private String volumeName;
     private String bucketName;
     private String keyName;
+    private String ownerName;
     private long creationTime;
     private ReplicationConfig replicationConfig;
+    private final AclListBuilder acls;
     private final TreeMap<Integer, PartKeyInfo> partKeyInfoList;
     private long parentID;
     private byte schemaVersion;
 
     public Builder() {
+      this.acls = AclListBuilder.empty();
       this.partKeyInfoList = new TreeMap<>();
     }
 
@@ -282,8 +304,10 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
       this.volumeName = multipartKeyInfo.volumeName;
       this.bucketName = multipartKeyInfo.bucketName;
       this.keyName = multipartKeyInfo.keyName;
+      this.ownerName = multipartKeyInfo.ownerName;
       this.creationTime = multipartKeyInfo.creationTime;
       this.replicationConfig = multipartKeyInfo.replicationConfig;
+      this.acls = AclListBuilder.of(multipartKeyInfo.acls);
       this.partKeyInfoList = new TreeMap<>();
       if (multipartKeyInfo.getSchemaVersion() == 0) {
         for (PartKeyInfo partKeyInfo : multipartKeyInfo.partKeyInfoMap) {
@@ -317,6 +341,11 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
       return this;
     }
 
+    public Builder setOwnerName(String owner) {
+      this.ownerName = owner;
+      return this;
+    }
+
     public Builder setCreationTime(long crTime) {
       this.creationTime = crTime;
       return this;
@@ -337,6 +366,24 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     public Builder addPartKeyInfoList(int partNum, PartKeyInfo partKeyInfo) {
       if (partKeyInfo != null) {
         partKeyInfoList.put(partNum, partKeyInfo);
+      }
+      return this;
+    }
+
+    public Builder setAcls(List<OzoneAcl> listOfAcls) {
+      if (listOfAcls != null) {
+        this.acls.set(listOfAcls);
+      }
+      return this;
+    }
+
+    public AclListBuilder acls() {
+      return acls;
+    }
+
+    public Builder addAcl(OzoneAcl ozoneAcl) {
+      if (ozoneAcl != null) {
+        this.acls.add(ozoneAcl);
       }
       return this;
     }
@@ -396,8 +443,11 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
             multipartKeyInfo.getBucketName() : null)
         .setKeyName(multipartKeyInfo.hasKeyName() ?
             multipartKeyInfo.getKeyName() : null)
+        .setOwnerName(multipartKeyInfo.hasOwnerName() ?
+            multipartKeyInfo.getOwnerName() : null)
         .setCreationTime(multipartKeyInfo.getCreationTime())
         .setReplicationConfig(replicationConfig)
+        .setAcls(OzoneAclUtil.fromProtobuf(multipartKeyInfo.getAclsList()))
         .setPartKeyInfoList(list)
         .setObjectID(multipartKeyInfo.getObjectID())
         .setUpdateID(multipartKeyInfo.getUpdateID())
@@ -437,6 +487,9 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
     if (keyName != null) {
       builder.setKeyName(keyName);
     }
+    if (ownerName != null) {
+      builder.setOwnerName(ownerName);
+    }
 
     if (replicationConfig instanceof ECReplicationConfig) {
       ECReplicationConfig ecConf = (ECReplicationConfig) replicationConfig;
@@ -445,6 +498,7 @@ public final class OmMultipartKeyInfo extends WithObjectID implements CopyObject
       builder.setFactor(ReplicationConfig.getLegacyFactor(replicationConfig));
     }
 
+    builder.addAllAcls(OzoneAclUtil.toProtobuf(acls));
     builder.addAllPartKeyInfoList(partKeyInfoMap);
     return builder.build();
   }
